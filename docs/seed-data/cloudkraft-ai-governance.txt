@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloudKraft — Tier 1 Diagnostic Assessment</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #1F3A5F; --navy-deep: #0D1F38; --teal: #0B7A6F;
+    --teal-light: #E1F5EE; --teal-mid: #9FE1CB;
+    --text: #1A1A1A; --muted: #5A6270; --hint: #8A909A;
+    --border: #D0D5DD; --surface: #F7F9FB;
+    --serif: 'EB Garamond', Georgia, serif;
+    --sans: 'Inter', system-ui, sans-serif;
+  }
+  body { font-family: var(--sans); background: #fff; color: var(--text); font-size: 13px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  @media print {
+    body { font-size: 11px; }
+    .no-print { display: none; }
+    .page { box-shadow: none; margin: 0; max-width: 100%; }
+  }
+  .page { max-width: 794px; margin: 0 auto; background: #fff; box-shadow: 0 0 40px rgba(0,0,0,0.08); }
+
+  /* Header */
+  .header { background: var(--navy-deep); padding: 36px 48px 32px; position: relative; overflow: hidden; }
+  .header::after { content: ''; position: absolute; right: -60px; top: -60px; width: 240px; height: 240px; border-radius: 50%; border: 40px solid rgba(11,122,111,0.15); }
+  .header-brand { font-family: var(--serif); font-size: 15px; color: rgba(255,255,255,0.5); letter-spacing: 0.04em; margin-bottom: 28px; }
+  .header-brand span { color: var(--teal-mid); }
+  .header-tier { font-family: var(--sans); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--teal-mid); margin-bottom: 8px; }
+  .header-title { font-family: var(--serif); font-size: 36px; font-weight: 400; color: #fff; line-height: 1.2; margin-bottom: 12px; }
+  .header-sub { font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.7; max-width: 480px; margin-bottom: 28px; }
+  .header-meta { display: flex; gap: 24px; flex-wrap: wrap; }
+  .meta-item { }
+  .meta-label { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 3px; }
+  .meta-value { font-size: 13px; color: #fff; font-weight: 500; }
+
+  /* Body */
+  .body { padding: 40px 48px; }
+
+  /* Problem */
+  .problem { background: var(--surface); border-left: 3px solid var(--teal); padding: 20px 24px; margin-bottom: 36px; }
+  .problem-text { font-family: var(--serif); font-size: 16px; color: var(--navy); line-height: 1.7; font-style: italic; }
+
+  /* Stats row */
+  .stats { display: flex; gap: 0; margin-bottom: 36px; border: 1px solid var(--border); }
+  .stat { flex: 1; padding: 18px 20px; border-right: 1px solid var(--border); text-align: center; }
+  .stat:last-child { border-right: none; }
+  .stat-num { font-family: var(--serif); font-size: 28px; color: var(--navy); line-height: 1; margin-bottom: 4px; }
+  .stat-label { font-size: 11px; color: var(--hint); line-height: 1.4; }
+
+  /* Section */
+  .section-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--teal); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .section-title { font-family: var(--serif); font-size: 22px; color: var(--navy); margin-bottom: 10px; font-weight: 400; }
+  .section-body { font-size: 13px; color: var(--muted); line-height: 1.8; margin-bottom: 24px; }
+
+  /* Deliverables */
+  .deliverables { margin-bottom: 36px; }
+  .deliverable { display: flex; gap: 0; margin-bottom: 2px; }
+  .deliverable-header { background: var(--navy); padding: 12px 18px; width: 200px; flex-shrink: 0; display: flex; align-items: center; }
+  .deliverable-header-text { font-size: 12px; font-weight: 600; color: #fff; line-height: 1.3; }
+  .deliverable-body { background: var(--surface); padding: 12px 18px; flex: 1; border: 1px solid var(--border); border-left: none; display: flex; align-items: center; }
+  .deliverable-body-text { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .deliverable:nth-child(even) .deliverable-header { background: var(--teal); }
+
+  /* Engagement box */
+  .engagement { border: 1px solid var(--border); margin-bottom: 36px; }
+  .engagement-header { background: var(--navy); padding: 14px 20px; }
+  .engagement-header-text { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+  .engagement-grid { display: flex; }
+  .engagement-cell { flex: 1; padding: 16px 20px; border-right: 1px solid var(--border); }
+  .engagement-cell:last-child { border-right: none; }
+  .engagement-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hint); margin-bottom: 4px; }
+  .engagement-value { font-size: 13px; color: var(--navy); font-weight: 500; }
+  .engagement-sub { font-size: 11px; color: var(--hint); margin-top: 2px; }
+
+  /* Ideal for */
+  .ideal { background: var(--teal-light); border: 1px solid var(--teal-mid); padding: 16px 20px; margin-bottom: 36px; display: flex; gap: 16px; align-items: flex-start; }
+  .ideal-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal); flex-shrink: 0; padding-top: 2px; }
+  .ideal-roles { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ideal-role { font-size: 12px; color: var(--teal); border: 1px solid var(--teal-mid); padding: 2px 10px; background: #fff; }
+
+  /* Process */
+  .process { margin-bottom: 36px; }
+  .process-steps { display: flex; gap: 0; }
+  .process-step { flex: 1; position: relative; }
+  .process-step::after { content: '→'; position: absolute; right: -8px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--hint); z-index: 1; }
+  .process-step:last-child::after { display: none; }
+  .process-step-inner { background: var(--surface); border: 1px solid var(--border); padding: 14px; margin-right: 16px; text-align: center; }
+  .process-step:last-child .process-step-inner { margin-right: 0; }
+  .process-num { font-family: var(--serif); font-size: 20px; color: var(--navy); margin-bottom: 4px; }
+  .process-name { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+  /* Vendor neutral */
+  .principles { display: flex; gap: 12px; margin-bottom: 36px; }
+  .principle { flex: 1; padding: 14px; background: var(--surface); border: 1px solid var(--border); }
+  .principle-title { font-size: 11px; font-weight: 600; color: var(--navy); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .principle-body { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  /* CTA */
+  .cta { background: var(--navy); padding: 28px 32px; display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+  .cta-text { }
+  .cta-title { font-family: var(--serif); font-size: 20px; color: #fff; margin-bottom: 4px; font-weight: 400; }
+  .cta-sub { font-size: 12px; color: rgba(255,255,255,0.55); }
+  .cta-contact { text-align: right; flex-shrink: 0; }
+  .cta-email { font-size: 13px; color: var(--teal-mid); display: block; margin-bottom: 3px; }
+  .cta-website { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+  /* Footer */
+  .footer { padding: 14px 48px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .footer-copy { font-size: 10px; color: var(--hint); }
+  .footer-tm { font-size: 10px; color: var(--hint); }
+
+  /* Print button */
+  .print-btn { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: #fff; border: none; padding: 12px 20px; font-family: var(--sans); font-size: 13px; cursor: pointer; border-radius: 2px; }
+  .print-btn:hover { background: var(--navy-deep); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="header">
+    <p class="header-brand">Cloud<span>Kraft</span> Consulting Inc.</p>
+    <p class="header-tier">Tier 1 &nbsp;&middot;&nbsp; Advisory Services</p>
+    <h1 class="header-title">Diagnostic Assessment</h1>
+    <p class="header-sub">An evidence-based picture of your AI landscape, governance gaps, and a prioritised roadmap &mdash; in three to four weeks, structured for board-level review.</p>
+    <div class="header-meta">
+      <div class="meta-item"><p class="meta-label">Investment</p><p class="meta-value">From $15,000</p></div>
+      <div class="meta-item"><p class="meta-label">Duration</p><p class="meta-value">3&ndash;4 weeks</p></div>
+      <div class="meta-item"><p class="meta-label">Pricing model</p><p class="meta-value">Fixed price</p></div>
+      <div class="meta-item"><p class="meta-label">Format</p><p class="meta-value">Remote or on-site</p></div>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <div class="problem">
+      <p class="problem-text">&ldquo;Most organisations engaging CloudKraft do not have a complete picture of their AI landscape. Shadow AI is running in places leadership does not know about. Costs are not attributed. Compliance gaps are assumed rather than measured.&rdquo;</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><p class="stat-num">2&ndash;4x</p><p class="stat-label">Shadow AI spend vs reported costs</p></div>
+      <div class="stat"><p class="stat-num">1.8</p><p class="stat-label">Median governance maturity score on first assessment</p></div>
+      <div class="stat"><p class="stat-num">&lt;15%</p><p class="stat-label">Organisations scoring above 3.0 on first assessment</p></div>
+      <div class="stat"><p class="stat-num">3&ndash;4</p><p class="stat-label">Weeks to a board-ready picture of your AI estate</p></div>
+    </div>
+
+    <p class="section-label">What you receive</p>
+    <div class="deliverables">
+      <div class="deliverable">
+        <div class="deliverable-header"><p class="deliverable-header-text">AI Landscape Audit</p></div>
+        <div class="deliverable-body"><p class="deliverable-body-text">Complete inventory of sanctioned and shadow AI systems, models, data flows, vendor relationships, and ownership across the organisation.</p></div>
+      </div>
+      <div class="deliverable">
+        <div class="deliverable-header"><p class="deliverable-header-text">Use-Case Prioritisation Matrix</p></div>
+        <div class="deliverable-body"><p class="deliverable-body-text">Every AI initiative scored on business value, feasibility, risk, and strategic alignment. Clear invest / defer / stop recommendations with supporting rationale.</p></div>
+      </div>
+      <div class="deliverable">
+        <div class="deliverable-header"><p class="deliverable-header-text">Governance Maturity Scorecard</p></div>
+        <div class="deliverable-body"><p class="deliverable-body-text">Quantified scoring across the CloudKraft five-layer framework with gap analysis and peer benchmarking against typical enterprise AI maturity.</p></div>
+      </div>
+      <div class="deliverable">
+        <div class="deliverable-header"><p class="deliverable-header-text">Risk &amp; Cost Exposure Analysis</p></div>
+        <div class="deliverable-body"><p class="deliverable-body-text">Quantified findings on shadow AI spend, compliance gaps, data exposure vectors, and vendor concentration risk. Evidence-based, not assumption-based.</p></div>
+      </div>
+      <div class="deliverable">
+        <div class="deliverable-header"><p class="deliverable-header-text">Prioritised 12-Month Roadmap</p></div>
+        <div class="deliverable-body"><p class="deliverable-body-text">Quick wins, medium-term builds, and strategic initiatives &mdash; costed, sequenced, and structured to support a funding request if needed.</p></div>
+      </div>
+      <div class="deliverable">
+        <div class="deliverable-header"><p class="deliverable-header-text">Executive Readout Deck</p></div>
+        <div class="deliverable-body"><p class="deliverable-body-text">Board-ready presentation with written report. Suitable for CIO, CISO, audit committee, and executive leadership review.</p></div>
+      </div>
+    </div>
+
+    <p class="section-label">Engagement structure</p>
+    <div class="engagement">
+      <div class="engagement-header"><p class="engagement-header-text">How the engagement works</p></div>
+      <div class="engagement-grid">
+        <div class="engagement-cell"><p class="engagement-label">Week 1</p><p class="engagement-value">Discovery</p><p class="engagement-sub">Stakeholder interviews, documentation review, shadow AI detection</p></div>
+        <div class="engagement-cell"><p class="engagement-label">Week 2</p><p class="engagement-value">Analysis</p><p class="engagement-sub">Scoring, prioritisation, risk and cost quantification</p></div>
+        <div class="engagement-cell"><p class="engagement-label">Week 3</p><p class="engagement-value">Synthesis</p><p class="engagement-sub">Roadmap development, report writing, deck preparation</p></div>
+        <div class="engagement-cell"><p class="engagement-label">Week 3&ndash;4</p><p class="engagement-value">Readout</p><p class="engagement-sub">Executive presentation and Q&amp;A with leadership team</p></div>
+      </div>
+    </div>
+
+    <div class="ideal">
+      <p class="ideal-label">Ideal for</p>
+      <div class="ideal-roles">
+        <span class="ideal-role">CIO</span>
+        <span class="ideal-role">CDO</span>
+        <span class="ideal-role">CISO</span>
+        <span class="ideal-role">Head of AI</span>
+        <span class="ideal-role">Chief Architect</span>
+        <span class="ideal-role">Programme Sponsor</span>
+      </div>
+    </div>
+
+    <p class="section-label">Our principles</p>
+    <div class="principles">
+      <div class="principle"><p class="principle-title">Vendor-neutral</p><p class="principle-body">No reseller agreements. Recommendations serve your requirements, not a vendor relationship.</p></div>
+      <div class="principle"><p class="principle-title">Senior-led</p><p class="principle-body">Every engagement delivered by the principal architect. Not handed to a junior consulting bench.</p></div>
+      <div class="principle"><p class="principle-title">Evidence-based</p><p class="principle-body">Every finding is documented and traceable. No opinions presented as facts.</p></div>
+      <div class="principle"><p class="principle-title">Canada-based</p><p class="principle-body">Deep familiarity with OSFI B-13, PIPEDA, and Quebec Law 25.</p></div>
+    </div>
+
+    <div class="cta">
+      <div class="cta-text">
+        <p class="cta-title">Ready to start?</p>
+        <p class="cta-sub">Engagements typically begin within two weeks of agreement. Fixed scope. Fixed price.</p>
+      </div>
+      <div class="cta-contact">
+        <span class="cta-email">faiz@cloudkraft.com</span>
+        <span class="cta-website">cloudkraft.com</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <p class="footer-copy">CloudKraft Consulting Inc. &copy; 2026 &nbsp;&middot;&nbsp; Kitchener, Ontario, Canada</p>
+    <p class="footer-tm">CloudKraft AI Control Tower&trade; is a trademark of CloudKraft Consulting Inc.</p>
+  </div>
+</div>
+
+<button class="print-btn no-print" onclick="window.print()">Save as PDF &darr;</button>
+
+</body>
+</html>

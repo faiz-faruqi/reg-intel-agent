@@ -1,0 +1,18 @@
+# railway.toml
+# Railway Hobby tier — two services: api + postgres (pgvector)
+# Qdrant is NOT used — pgvector on PostgreSQL handles both
+# retrieval and audit log. See ADR-002.
+#
+# Services spin down after 30 min inactivity on Hobby tier.
+# Pre-warm the URL before any demo: open it once, wait 30 seconds.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "uvicorn src.main:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+healthcheckPath = "/health"
+healthcheckTimeout = 30
