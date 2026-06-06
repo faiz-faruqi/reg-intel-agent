@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     LANGSMITH_PROJECT: str = "reg-intel-agent"
     LANGSMITH_TRACING_V2: str = "true"
 
+    # GitHub (Phase 2 — Action Agent)
+    GITHUB_TOKEN: str | None = None
+    GITHUB_REPO: str = "faiz-faruqi/reg-intel-agent"
+
     # Application
     PORT: int = 8000
     DEBUG: bool = False
