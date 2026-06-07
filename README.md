@@ -101,11 +101,11 @@ The CLI (`python -m src.cli`) runs the full path including Action Agent and the 
 
 | ADR | Decision |
 |-----|----------|
-| [ADR-001](docs/adrs/ADR-001.md) | LangGraph vs. Amazon Bedrock Agents |
-| [ADR-002](docs/adrs/ADR-002.md) | pgvector co-located (demo) vs. dedicated vector DB (production) |
-| [ADR-003](docs/adrs/ADR-003.md) | Bedrock Guardrails configuration for a regulated industry |
-| [ADR-004](docs/adrs/ADR-004.md) | Railway Hobby (demo) vs. AWS App Runner/ECS (production) |
-| [ADR-005](docs/adrs/ADR-005.md) | IAM access key (Railway) vs. IAM role (AWS compute) |
+| [ADR-001](docs/adrs/ADR-001-langgraph-vs-bedrock-agents.md) | LangGraph vs. Amazon Bedrock Agents |
+| [ADR-002](docs/adrs/ADR-002-pgvector-collocated-vs-dedicated-vector-db.md) | pgvector co-located on Neon (demo) vs. dedicated vector DB (production) |
+| [ADR-003](docs/adrs/ADR-003-application-guardrails-vs-bedrock-guardrails.md) | Application guardrails vs. AWS Bedrock Guardrails |
+| [ADR-004](docs/adrs/ADR-004-railway-hobby-vs-aws-app-runner.md) | Railway Hobby (demo) vs. AWS App Runner/ECS (production) |
+| [ADR-005](docs/adrs/ADR-005-openrouter-demo-vs-bedrock-production.md) | OpenRouter (demo) vs. Amazon Bedrock (production) |
 
 ---
 

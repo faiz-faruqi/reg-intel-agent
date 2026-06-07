@@ -37,7 +37,7 @@ response → propose an action under human approval.
 - [x] Repo scaffold: `pyproject.toml`, `src/`, `docker-compose.yml`, `railway.toml`,
       `Dockerfile`, `.env.example`, `.gitignore`, `teardown.sh`
 - [x] `terraform/` — `budget_alert.tf` + `iam_bedrock.tf` stubs (AWS not active)
-- [x] ADR stubs 001–005 in `docs/adrs/`
+- [x] ADR stubs 001–005 in `docs/adrs/` (renamed with descriptive titles)
 - [x] `init-db.sql` — `documents` table (HNSW index) + `audit_log` (append-only triggers)
 
 ---
