@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     # OpenRouter (Phase 1) — used for both generation and embeddings
     OPENROUTER_API_KEY: str | None = None
-    OPENROUTER_MODEL_ID: str = "anthropic/claude-sonnet-4.5"
+    OPENROUTER_MODEL_ID: str = "google/gemma-4-31b-it:free"
 
     # Bedrock (Phase 2+)
     AWS_ACCESS_KEY_ID: str | None = None
