@@ -1,19 +1,27 @@
 """FastAPI application entry point."""
 
+import json as _json
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 logger = logging.getLogger(__name__)
+
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="Regulatory Intelligence Agent",
     description="Governed multi-agent system for regulatory intelligence",
     version="0.1.0",
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 class QueryRequest(BaseModel):
@@ -51,19 +59,20 @@ async def health() -> dict[str, str]:
 
 
 @app.post("/query", response_model=QueryResponse, tags=["query"])
-async def query(request: QueryRequest) -> QueryResponse:
+@limiter.limit("10/minute;30/day")
+async def query(request: Request, body: QueryRequest) -> QueryResponse:
     """
-    Run a compliance question through the full agent graph.
-    Returns a cited response grounded in the retrieved regulatory documents.
+    Run a compliance question through the Knowledge + Analysis agents.
+    Rate limited: 10/minute, 30/day per IP.
     """
-    from src.graph import graph  # deferred import keeps startup fast if graph isn't used
+    from src.graph import graph
 
-    if not request.question.strip():
+    if not body.question.strip():
         raise HTTPException(status_code=400, detail="question must not be empty")
 
     initial_state: dict = {
-        "question": request.question,
-        "top_k": request.top_k,
+        "question": body.question,
+        "top_k": body.top_k,
         "retrieved_chunks": [],
         "draft_response": "",
         "citations": [],
@@ -78,7 +87,7 @@ async def query(request: QueryRequest) -> QueryResponse:
         raise HTTPException(status_code=500, detail="Agent graph failed. See server logs.")
 
     return QueryResponse(
-        question=request.question,
+        question=body.question,
         response=result.get("draft_response", ""),
         citations=result.get("citations", []),
         is_cited=result.get("is_cited", False),
@@ -86,20 +95,22 @@ async def query(request: QueryRequest) -> QueryResponse:
 
 
 @app.post("/propose", response_model=ProposeResponse, tags=["query"])
-async def propose(request: QueryRequest) -> ProposeResponse:
+@limiter.limit("5/minute;15/day")
+async def propose(request: Request, body: QueryRequest) -> ProposeResponse:
     """
     Run the full 3-agent pipeline (Knowledge → Analysis → Action) and return the
     proposed GitHub issue. The proposal is NEVER executed via this endpoint —
     execution requires human approval via the CLI HITL gate.
+    Rate limited: 5/minute, 15/day per IP.
     """
     from src.graph import propose_graph
 
-    if not request.question.strip():
+    if not body.question.strip():
         raise HTTPException(status_code=400, detail="question must not be empty")
 
     initial_state: dict = {
-        "question": request.question,
-        "top_k": request.top_k,
+        "question": body.question,
+        "top_k": body.top_k,
         "retrieved_chunks": [],
         "draft_response": "",
         "citations": [],
@@ -113,7 +124,6 @@ async def propose(request: QueryRequest) -> ProposeResponse:
         logger.exception("propose graph invocation failed: %s", exc)
         raise HTTPException(status_code=500, detail="Agent graph failed. See server logs.")
 
-    import json as _json
     raw_proposal = result.get("proposed_action", "{}")
     try:
         proposal = _json.loads(raw_proposal) if isinstance(raw_proposal, str) else raw_proposal
@@ -121,7 +131,7 @@ async def propose(request: QueryRequest) -> ProposeResponse:
         proposal = {}
 
     return ProposeResponse(
-        question=request.question,
+        question=body.question,
         response=result.get("draft_response", ""),
         citations=result.get("citations", []),
         is_cited=result.get("is_cited", False),
