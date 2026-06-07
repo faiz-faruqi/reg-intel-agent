@@ -53,13 +53,18 @@ def _format_context(chunks: list[dict[str, Any]]) -> str:
 
 
 def _extract_citations(response_text: str, chunks: list[dict[str, Any]]) -> list[str]:
-    """Map [N] markers in the response back to their source strings."""
+    """Map [N] markers in the response back to their source strings, deduplicated by source."""
     indices = {int(m) for m in re.findall(r"\[(\d+)\]", response_text)}
-    return [
-        f"[{i}] {chunks[i - 1]['title']} — {chunks[i - 1]['source']}"
-        for i in sorted(indices)
-        if 1 <= i <= len(chunks)
-    ]
+    seen: set[str] = set()
+    result: list[str] = []
+    for i in sorted(indices):
+        if not (1 <= i <= len(chunks)):
+            continue
+        source_key = f"{chunks[i - 1]['title']} — {chunks[i - 1]['source']}"
+        if source_key not in seen:
+            seen.add(source_key)
+            result.append(f"[{i}] {source_key}")
+    return result
 
 
 def analysis_agent(state: AgentState) -> AgentState:
