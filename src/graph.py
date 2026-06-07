@@ -1,12 +1,13 @@
-"""LangGraph definition: supervisor + Knowledge Agent + Analysis Agent."""
+"""LangGraph definitions: read-only graph (API) and propose graph (Action Agent, no HITL)."""
 
 import logging
 
 from langgraph.graph import END, StateGraph
 
+from src.agents.action_agent import action_agent
 from src.agents.analysis_agent import analysis_agent
 from src.agents.knowledge_agent import knowledge_agent
-from src.agents.supervisor import supervisor
+from src.agents.supervisor import full_supervisor, supervisor
 from src.state import AgentState
 
 logger = logging.getLogger(__name__)
@@ -44,5 +45,38 @@ def build_graph() -> StateGraph:
     return builder.compile()
 
 
-# Module-level singleton — imported by main.py and tests
+def build_propose_graph() -> StateGraph:
+    """
+    Full 3-agent graph (knowledge → analysis → action) with no HITL gate.
+    Returns the proposal without executing it — used by POST /propose.
+    """
+    builder = StateGraph(AgentState)
+
+    builder.add_node("supervisor", full_supervisor)
+    builder.add_node("knowledge_agent", knowledge_agent)
+    builder.add_node("analysis_agent", analysis_agent)
+    builder.add_node("action_agent", action_agent)
+
+    builder.set_entry_point("supervisor")
+
+    builder.add_conditional_edges(
+        "supervisor",
+        _route,
+        {
+            "knowledge_agent": "knowledge_agent",
+            "analysis_agent": "analysis_agent",
+            "action_agent": "action_agent",
+            END: END,
+        },
+    )
+
+    builder.add_edge("knowledge_agent", "supervisor")
+    builder.add_edge("analysis_agent", "supervisor")
+    builder.add_edge("action_agent", END)
+
+    return builder.compile()
+
+
+# Module-level singletons — imported by main.py and tests
 graph = build_graph()
+propose_graph = build_propose_graph()

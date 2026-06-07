@@ -28,6 +28,14 @@ class QueryResponse(BaseModel):
     is_cited: bool
 
 
+class ProposeResponse(BaseModel):
+    question: str
+    response: str
+    citations: list[str]
+    is_cited: bool
+    proposed_action: dict  # {title, body, labels} — never executed via API
+
+
 _UI_PATH = Path(__file__).parent / "static" / "index.html"
 
 
@@ -74,6 +82,50 @@ async def query(request: QueryRequest) -> QueryResponse:
         response=result.get("draft_response", ""),
         citations=result.get("citations", []),
         is_cited=result.get("is_cited", False),
+    )
+
+
+@app.post("/propose", response_model=ProposeResponse, tags=["query"])
+async def propose(request: QueryRequest) -> ProposeResponse:
+    """
+    Run the full 3-agent pipeline (Knowledge → Analysis → Action) and return the
+    proposed GitHub issue. The proposal is NEVER executed via this endpoint —
+    execution requires human approval via the CLI HITL gate.
+    """
+    from src.graph import propose_graph
+
+    if not request.question.strip():
+        raise HTTPException(status_code=400, detail="question must not be empty")
+
+    initial_state: dict = {
+        "question": request.question,
+        "top_k": request.top_k,
+        "retrieved_chunks": [],
+        "draft_response": "",
+        "citations": [],
+        "is_cited": False,
+        "next": "",
+    }
+
+    try:
+        result = propose_graph.invoke(initial_state)
+    except Exception as exc:
+        logger.exception("propose graph invocation failed: %s", exc)
+        raise HTTPException(status_code=500, detail="Agent graph failed. See server logs.")
+
+    import json as _json
+    raw_proposal = result.get("proposed_action", "{}")
+    try:
+        proposal = _json.loads(raw_proposal) if isinstance(raw_proposal, str) else raw_proposal
+    except Exception:
+        proposal = {}
+
+    return ProposeResponse(
+        question=request.question,
+        response=result.get("draft_response", ""),
+        citations=result.get("citations", []),
+        is_cited=result.get("is_cited", False),
+        proposed_action=proposal,
     )
 
 
