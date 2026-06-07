@@ -1,9 +1,10 @@
 """FastAPI application entry point."""
 
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,14 @@ class QueryResponse(BaseModel):
     response: str
     citations: list[str]
     is_cited: bool
+
+
+_UI_PATH = Path(__file__).parent / "static" / "index.html"
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def root() -> HTMLResponse:
+    return HTMLResponse(content=_UI_PATH.read_text())
 
 
 @app.get("/health", tags=["health"])

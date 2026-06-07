@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regulatory Intelligence Agent — CloudKraft</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface2: #263348;
+            --border: #334155;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59,130,246,0.12);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --code-bg: #0d1526;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* ── Nav ── */
+        nav {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(15,23,42,0.96);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem; height: 60px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-brand {
+            display: flex; align-items: center; gap: 0.65rem;
+            font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em;
+        }
+        .live-dot {
+            width: 8px; height: 8px;
+            background: var(--success); border-radius: 50%;
+            animation: blink 2s ease-in-out infinite;
+        }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+        .badge {
+            background: var(--accent-glow); color: var(--accent);
+            border: 1px solid rgba(59,130,246,0.4);
+            padding: 0.15rem 0.55rem; border-radius: 999px;
+            font-size: 0.65rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.07em;
+        }
+        .nav-links { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+        .nav-links a {
+            color: var(--muted); text-decoration: none;
+            font-size: 0.85rem; transition: color 0.15s;
+        }
+        .nav-links a:hover { color: var(--text); }
+
+        /* ── Layout ── */
+        .container { max-width: 1120px; margin: 0 auto; padding: 0 2rem; }
+        section { padding: 4rem 0; }
+        section + section { border-top: 1px solid var(--border); }
+
+        /* ── Hero ── */
+        .hero { text-align: center; padding: 5rem 0 4rem; }
+        .eyebrow {
+            color: var(--accent); font-size: 0.72rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1.1rem;
+        }
+        h1 {
+            font-size: clamp(1.9rem, 4.5vw, 3rem);
+            font-weight: 800; line-height: 1.15; margin-bottom: 1.25rem;
+            background: linear-gradient(135deg, #f1f5f9 0%, #7dd3fc 50%, #a78bfa 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .hero-sub {
+            color: var(--muted); font-size: 1.05rem;
+            max-width: 600px; margin: 0 auto 2.25rem;
+        }
+        .tech-stack { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+        .tech-tag {
+            background: var(--surface); border: 1px solid var(--border);
+            color: var(--muted); padding: 0.3rem 0.75rem; border-radius: 6px;
+            font-size: 0.75rem; font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+
+        /* ── Section header ── */
+        .sec-label {
+            color: var(--accent); font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.4rem;
+        }
+        h2 { font-size: 1.55rem; font-weight: 700; margin-bottom: 0.6rem; }
+        .sec-sub { color: var(--muted); font-size: 0.9rem; max-width: 640px; margin-bottom: 2.25rem; }
+
+        /* ── Pipeline ── */
+        .pipeline {
+            display: flex; gap: 0; overflow-x: auto; padding-bottom: 0.5rem;
+        }
+        .pipe-step {
+            flex: 1; min-width: 160px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 10px; padding: 1.25rem; position: relative;
+        }
+        .pipe-step + .pipe-step { margin-left: 2.75rem; }
+        .pipe-step + .pipe-step::before {
+            content: '→'; position: absolute;
+            left: -1.9rem; top: 50%; transform: translateY(-50%);
+            color: var(--muted); font-size: 1.1rem;
+        }
+        .pipe-step.gate { border-color: rgba(245,158,11,0.5); }
+        .pipe-icon { font-size: 1.4rem; margin-bottom: 0.55rem; }
+        .pipe-name { font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; color: var(--accent); }
+        .pipe-step.gate .pipe-name { color: var(--warning); }
+        .pipe-desc { font-size: 0.77rem; color: var(--muted); line-height: 1.55; }
+
+        /* ── Step cards ── */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+            gap: 1rem;
+        }
+        .step-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 10px; padding: 1.2rem;
+            display: flex; gap: 1rem; align-items: flex-start;
+        }
+        .step-num {
+            width: 26px; height: 26px; flex-shrink: 0;
+            background: var(--accent-glow); border: 1px solid rgba(59,130,246,0.4);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 0.72rem; font-weight: 800; color: var(--accent);
+        }
+        .step-title { font-weight: 600; font-size: 0.875rem; margin-bottom: 0.3rem; }
+        .step-body { font-size: 0.8rem; color: var(--muted); line-height: 1.55; }
+        .step-body code {
+            background: var(--code-bg); padding: 0.1rem 0.35rem;
+            border-radius: 4px; font-family: 'SF Mono', monospace;
+            font-size: 0.72rem; color: #7dd3fc;
+        }
+
+        /* ── Governance cards ── */
+        .gov-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        .gov-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 10px; padding: 1.25rem;
+        }
+        .gov-icon { font-size: 1.35rem; margin-bottom: 0.65rem; }
+        .gov-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
+        .gov-body { font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+
+        /* ── Infra cards ── */
+        .infra-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 1rem;
+        }
+        .infra-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 10px; padding: 1.15rem;
+        }
+        .infra-env {
+            font-size: 0.68rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.65rem;
+        }
+        .infra-env.demo { color: var(--success); }
+        .infra-env.prod { color: var(--warning); }
+        .infra-env.regs { color: var(--accent); }
+        .infra-items { list-style: none; font-size: 0.8rem; color: var(--muted); }
+        .infra-items li { padding: 0.2rem 0; display: flex; align-items: center; gap: 0.45rem; }
+        .infra-items li::before { content: '·'; color: var(--accent); font-size: 1.1rem; }
+
+        /* ── Demo ── */
+        .demo-layout {
+            display: grid; grid-template-columns: 1fr 1.5fr; gap: 1.5rem; align-items: start;
+        }
+        .demo-form {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1.5rem;
+        }
+        .field-label {
+            display: block; font-size: 0.72rem; font-weight: 700;
+            color: var(--muted); text-transform: uppercase;
+            letter-spacing: 0.07em; margin-bottom: 0.5rem;
+        }
+        textarea {
+            width: 100%; background: var(--bg);
+            border: 1px solid var(--border); border-radius: 8px;
+            color: var(--text); padding: 0.75rem;
+            font-size: 0.875rem; line-height: 1.5;
+            resize: vertical; min-height: 96px;
+            font-family: inherit; transition: border-color 0.2s;
+        }
+        textarea:focus { outline: none; border-color: var(--accent); }
+        .examples { display: flex; flex-direction: column; gap: 0.4rem; margin: 0.65rem 0; }
+        .ex-btn {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 6px; padding: 0.45rem 0.75rem;
+            font-size: 0.77rem; color: var(--muted);
+            cursor: pointer; text-align: left;
+            transition: all 0.15s; font-family: inherit;
+        }
+        .ex-btn:hover { border-color: var(--accent); color: var(--text); background: var(--accent-glow); }
+        .slider-row { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; }
+        input[type=range] { flex: 1; accent-color: var(--accent); }
+        .slider-val { font-size: 0.875rem; font-weight: 700; color: var(--accent); width: 1.5rem; }
+        .run-btn {
+            width: 100%; background: var(--accent); color: white; border: none;
+            border-radius: 8px; padding: 0.75rem; font-size: 0.9rem; font-weight: 700;
+            cursor: pointer; transition: background 0.2s, opacity 0.2s;
+            margin-top: 1rem; font-family: inherit; letter-spacing: -0.01em;
+        }
+        .run-btn:hover { background: #2563eb; }
+        .run-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        /* ── Response panel ── */
+        .resp-panel {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1.5rem; min-height: 320px;
+        }
+        .resp-empty {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; height: 280px;
+            color: var(--muted); text-align: center; gap: 0.75rem;
+        }
+        .resp-empty .icon { font-size: 2.2rem; opacity: 0.35; }
+        .resp-empty p { font-size: 0.85rem; }
+
+        /* Loading steps */
+        .load-steps { display: flex; flex-direction: column; gap: 0.7rem; padding: 0.5rem 0; }
+        .load-step {
+            display: flex; align-items: center; gap: 0.75rem;
+            font-size: 0.85rem; color: var(--muted); transition: color 0.3s;
+        }
+        .load-step.active { color: var(--text); }
+        .load-step.done  { color: var(--success); }
+        .load-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--border); flex-shrink: 0; transition: background 0.3s;
+        }
+        .load-step.active .load-dot { background: var(--accent); animation: blink 1s ease-in-out infinite; }
+        .load-step.done  .load-dot { background: var(--success); }
+
+        /* Response content */
+        .resp-meta { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .meta-chip {
+            display: flex; align-items: center; gap: 0.3rem;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 6px; padding: 0.2rem 0.55rem;
+            font-size: 0.7rem; color: var(--muted);
+        }
+        .meta-chip.ok  { border-color: rgba(16,185,129,0.4); color: var(--success); background: rgba(16,185,129,0.07); }
+        .meta-chip.acc { border-color: rgba(59,130,246,0.4); color: var(--accent); background: var(--accent-glow); }
+        .meta-chip.warn{ border-color: rgba(245,158,11,0.4); color: var(--warning); background: rgba(245,158,11,0.07); }
+
+        .resp-text { font-size: 0.875rem; line-height: 1.75; color: var(--text); }
+        .resp-text h2 { font-size: 1rem; margin: 1rem 0 0.35rem; }
+        .resp-text h3 { font-size: 0.9rem; margin: 0.75rem 0 0.3rem; }
+        .resp-text ul, .resp-text ol { padding-left: 1.25rem; margin: 0.4rem 0; }
+        .resp-text li { margin-bottom: 0.2rem; }
+        .resp-text p  { margin-bottom: 0.55rem; }
+
+        .cits-section { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+        .cits-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.5rem; }
+        .cit-item { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.78rem; color: var(--muted); margin-bottom: 0.4rem; line-height: 1.45; }
+        .cit-num {
+            background: var(--accent-glow); color: var(--accent);
+            border: 1px solid rgba(59,130,246,0.4);
+            border-radius: 4px; padding: 0.05rem 0.35rem;
+            font-size: 0.65rem; font-weight: 800; flex-shrink: 0; margin-top: 0.1rem;
+        }
+        .err-box {
+            background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.4);
+            border-radius: 8px; padding: 1rem; color: #fca5a5; font-size: 0.875rem;
+        }
+
+        /* Cold-start note */
+        .coldstart-note {
+            background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.3);
+            border-radius: 8px; padding: 0.6rem 1rem;
+            font-size: 0.78rem; color: #fcd34d; margin-bottom: 2rem; text-align: center;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 2rem; text-align: center; color: var(--muted); font-size: 0.8rem;
+        }
+        footer a { color: var(--accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+        footer p + p { margin-top: 0.4rem; }
+
+        @media (max-width: 800px) {
+            .demo-layout { grid-template-columns: 1fr; }
+            .pipeline { flex-direction: column; }
+            .pipe-step + .pipe-step { margin-left: 0; margin-top: 2.5rem; }
+            .pipe-step + .pipe-step::before { content: '↓'; left: 50%; top: -1.75rem; transform: translateX(-50%); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Nav ─────────────────────────────────────────────────────────────── -->
+<nav>
+    <div class="nav-brand">
+        <span class="live-dot"></span>
+        Reg·Intel Agent
+        <span class="badge">Live</span>
+    </div>
+    <ul class="nav-links">
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#governance">Governance</a></li>
+        <li><a href="#demo">Live Demo</a></li>
+        <li><a href="https://github.com/faiz-faruqi/reg-intel-agent" target="_blank">GitHub ↗</a></li>
+        <li><a href="/docs" target="_blank">API ↗</a></li>
+    </ul>
+</nav>
+
+<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+<div class="container">
+<section class="hero">
+    <div class="eyebrow">Reference Implementation · Regulated AI Systems</div>
+    <h1>Governed Multi-Agent System<br>for Regulatory Intelligence</h1>
+    <p class="hero-sub">
+        Answers compliance questions by retrieving grounded regulatory context,
+        drafting cited responses, and proposing audited write actions —
+        all under mandatory human oversight.
+    </p>
+    <div class="tech-stack">
+        <span class="tech-tag">LangGraph</span>
+        <span class="tech-tag">Amazon Bedrock</span>
+        <span class="tech-tag">pgvector RAG</span>
+        <span class="tech-tag">PostgreSQL Audit Log</span>
+        <span class="tech-tag">FastAPI</span>
+        <span class="tech-tag">Railway</span>
+        <span class="tech-tag">LangSmith Tracing</span>
+        <span class="tech-tag">Neon DB</span>
+    </div>
+</section>
+
+<!-- ── Architecture ──────────────────────────────────────────────────────── -->
+<section id="architecture">
+    <div class="sec-label">Architecture</div>
+    <h2>What Happens When You Submit a Query</h2>
+    <p class="sec-sub">
+        A LangGraph supervisor routes your question through three specialist agents.
+        Every step is traced in LangSmith and appended to an immutable PostgreSQL audit log.
+    </p>
+
+    <div class="pipeline">
+        <div class="pipe-step">
+            <div class="pipe-icon">🛡️</div>
+            <div class="pipe-name">Input Guardrail</div>
+            <div class="pipe-desc">Screens for denied topics (hacking, evasion, harmful content) and PII patterns before any agent sees the question.</div>
+        </div>
+        <div class="pipe-step">
+            <div class="pipe-icon">🔍</div>
+            <div class="pipe-name">Knowledge Agent</div>
+            <div class="pipe-desc">Embeds the question and runs cosine similarity search via pgvector HNSW index over seeded regulatory docs (GDPR, Basel III, OSFI).</div>
+        </div>
+        <div class="pipe-step">
+            <div class="pipe-icon">✍️</div>
+            <div class="pipe-name">Analysis Agent</div>
+            <div class="pipe-desc">Drafts a compliance-grounded response using retrieved chunks. Citations are mandatory — un-cited claims are flagged, not emitted.</div>
+        </div>
+        <div class="pipe-step gate">
+            <div class="pipe-icon">👤</div>
+            <div class="pipe-name">Human Approval Gate</div>
+            <div class="pipe-desc">Any write action (GitHub issue, ticket) is proposed and the graph pauses. A human must explicitly approve before any write executes.</div>
+        </div>
+        <div class="pipe-step">
+            <div class="pipe-icon">📋</div>
+            <div class="pipe-name">Audit Log</div>
+            <div class="pipe-desc">Every step, tool call, and approval appended to PostgreSQL. DELETE and UPDATE are blocked by a database-level trigger — tamper-proof by design.</div>
+        </div>
+    </div>
+
+    <!-- Under the hood -->
+    <div style="margin-top: 3rem;">
+        <div class="sec-label">Under the Hood</div>
+        <h2>Step-by-Step Execution</h2>
+        <p class="sec-sub">What the code actually does when a question arrives at the API.</p>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-num">1</div>
+                <div>
+                    <div class="step-title">Supervisor routes the question</div>
+                    <div class="step-body">
+                        A LangGraph <code>StateGraph</code> with a supervisor node checks state on each
+                        transition and routes: knowledge → analysis → (action in CLI mode).
+                        Uses <code>AgentState(TypedDict, total=False)</code> so partial returns
+                        merge safely without overwriting existing state keys.
+                    </div>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">2</div>
+                <div>
+                    <div class="step-title">pgvector semantic retrieval</div>
+                    <div class="step-body">
+                        The question is embedded with <code>text-embedding-3-small</code> (1536-dim).
+                        An HNSW index on the <code>documents</code> table returns top-k chunks
+                        by cosine similarity. HNSW works at any dataset size — unlike IVFFlat,
+                        which requires hundreds of rows to be useful.
+                    </div>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">3</div>
+                <div>
+                    <div class="step-title">Citation-mandatory drafting</div>
+                    <div class="step-body">
+                        Analysis Agent receives retrieved chunks and is prompted: every factual claim
+                        must reference a <code>[N]</code> citation. The response is checked for
+                        <code>is_cited=True</code> before emission — hallucination is structurally
+                        constrained, not just prompted against.
+                    </div>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">4</div>
+                <div>
+                    <div class="step-title">Output guardrail</div>
+                    <div class="step-body">
+                        The draft is screened for PII patterns (SSN regex, credit card regex,
+                        email) and harmful content before being returned to the caller.
+                        API-compatible with AWS Bedrock Guardrails — swapping to managed
+                        guardrails in production is a config change, not a rewrite.
+                    </div>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">5</div>
+                <div>
+                    <div class="step-title">Action proposal + HITL gate (CLI mode)</div>
+                    <div class="step-body">
+                        Action Agent generates a JSON proposal <code>{title, body, labels}</code>
+                        for a GitHub issue. LangGraph's <code>interrupt_before=["human_gate"]</code>
+                        pauses the graph. The CLI prompts for <code>approve/reject</code>, then calls
+                        <code>graph.update_state()</code> and resumes — no write without human intent.
+                    </div>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-num">6</div>
+                <div>
+                    <div class="step-title">Append-only audit trail</div>
+                    <div class="step-body">
+                        Every agent step and human decision is written to the <code>audit_log</code>
+                        table in Neon PostgreSQL with a UTC timestamp. A <code>BEFORE DELETE</code>
+                        and <code>BEFORE UPDATE</code> trigger raises an exception on any
+                        modification attempt — immutability enforced at the DB level.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Governance ────────────────────────────────────────────────────────── -->
+<section id="governance">
+    <div class="sec-label">Governance</div>
+    <h2>Built for Regulated Environments</h2>
+    <p class="sec-sub">
+        Six non-negotiable pillars that make this system auditable, safe, and honest.
+        Each maps directly to a production AWS equivalent — described in the ADRs.
+    </p>
+    <div class="gov-grid">
+        <div class="gov-card">
+            <div class="gov-icon">🛡️</div>
+            <div class="gov-title">Bedrock Guardrails (mirrored)</div>
+            <div class="gov-body">
+                Application-level guardrails screen every input and output for denied topics,
+                PII, and harmful content. API-compatible with AWS Bedrock Guardrails —
+                production swap is a single config change.
+            </div>
+        </div>
+        <div class="gov-card">
+            <div class="gov-icon">📋</div>
+            <div class="gov-title">Immutable Audit Log</div>
+            <div class="gov-body">
+                Every agent step, tool call, and human approval is appended to PostgreSQL.
+                A database-level trigger prevents any DELETE or UPDATE. Regulators can
+                trust the log is tamper-proof — not just by convention.
+            </div>
+        </div>
+        <div class="gov-card">
+            <div class="gov-icon">👤</div>
+            <div class="gov-title">Human-in-the-Loop Gate</div>
+            <div class="gov-body">
+                The Action Agent proposes write actions — it never executes them.
+                LangGraph's <code style="font-family:monospace;font-size:0.77rem;">interrupt_before</code>
+                pauses the graph until a human explicitly approves. Rejection is also logged.
+            </div>
+        </div>
+        <div class="gov-card">
+            <div class="gov-icon">📎</div>
+            <div class="gov-title">Citations Mandatory</div>
+            <div class="gov-body">
+                Every factual claim must reference a numbered source. Un-cited responses
+                are flagged before emission. Hallucination is constrained at the prompt and
+                enforcement layer — both.
+            </div>
+        </div>
+        <div class="gov-card">
+            <div class="gov-icon">🔑</div>
+            <div class="gov-title">IAM Least-Privilege</div>
+            <div class="gov-body">
+                The Bedrock IAM user is scoped to <code style="font-family:monospace;font-size:0.77rem;">bedrock:InvokeModel</code>
+                on target model ARNs only. In production (AWS compute), this becomes an
+                IAM role — no long-lived access keys at all.
+            </div>
+        </div>
+        <div class="gov-card">
+            <div class="gov-icon">🔭</div>
+            <div class="gov-title">Full Observability</div>
+            <div class="gov-body">
+                Every agent step and LLM call is traced in LangSmith. The full graph —
+                supervisor routing, retrieval results, draft generations — is visible,
+                replayable, and attributable to a specific run.
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Infrastructure ────────────────────────────────────────────────────── -->
+<section>
+    <div class="sec-label">Infrastructure</div>
+    <h2>Two-Tier Deployment Strategy</h2>
+    <p class="sec-sub">
+        Deliberately cost-optimised for demo portability at ~CAD $20–35/month.
+        The production path is fully designed in ADRs — moving to AWS changes
+        infrastructure, not application code.
+    </p>
+    <div class="infra-grid">
+        <div class="infra-card">
+            <div class="infra-env demo">⬤  Demo Tier — Active Now</div>
+            <ul class="infra-items">
+                <li>Railway Hobby (FastAPI API)</li>
+                <li>Neon free tier (pgvector)</li>
+                <li>OpenRouter → Claude Sonnet</li>
+                <li>LangSmith tracing</li>
+                <li>~CAD $20–35/month total</li>
+                <li>Sleeps after 30 min idle</li>
+            </ul>
+        </div>
+        <div class="infra-card">
+            <div class="infra-env prod">⬤  Production Path — ADR-004</div>
+            <ul class="infra-items">
+                <li>AWS App Runner / ECS Fargate</li>
+                <li>Aurora Serverless v2 + pgvector</li>
+                <li>Amazon Bedrock (IAM role)</li>
+                <li>AWS Secrets Manager</li>
+                <li>Private VPC + WAF</li>
+                <li>Always-on, private networking</li>
+            </ul>
+        </div>
+        <div class="infra-card">
+            <div class="infra-env regs">⬤  Compliance Alignment</div>
+            <ul class="infra-items">
+                <li>OSFI E-23 model risk</li>
+                <li>GDPR Article 5 data minimisation</li>
+                <li>Basel III capital adequacy</li>
+                <li>Append-only audit trail</li>
+                <li>Bedrock Guardrails</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- ── Live Demo ─────────────────────────────────────────────────────────── -->
+<section id="demo">
+    <div class="sec-label">Live Demo</div>
+    <h2>Ask a Compliance Question</h2>
+    <p class="sec-sub">
+        The API is live. Submit a question — it runs through the full Knowledge + Analysis
+        agent graph and returns a cited response grounded in seeded regulatory documents
+        (GDPR, Basel III, OSFI).
+    </p>
+
+    <div class="coldstart-note">
+        ⚡ Railway Hobby services sleep after 30 min of inactivity.
+        If the first request takes 10–30 s, that's a cold start — subsequent queries are fast.
+    </div>
+
+    <div class="demo-layout">
+        <!-- Form -->
+        <div class="demo-form">
+            <label class="field-label">Your Compliance Question</label>
+            <textarea id="question" placeholder="e.g. What are GDPR data minimisation requirements?"></textarea>
+
+            <div style="margin: 0.75rem 0 0.4rem;">
+                <span class="field-label">Try an example</span>
+            </div>
+            <div class="examples">
+                <button class="ex-btn" onclick="setQ(this)">What are GDPR data minimisation requirements?</button>
+                <button class="ex-btn" onclick="setQ(this)">What does Basel III require for capital adequacy?</button>
+                <button class="ex-btn" onclick="setQ(this)">How does OSFI define model risk governance?</button>
+                <button class="ex-btn" onclick="setQ(this)">What are the data subject rights under GDPR?</button>
+            </div>
+
+            <label class="field-label" style="margin-top:1rem;display:block;">Top-K Chunks Retrieved</label>
+            <div class="slider-row">
+                <input type="range" id="top_k" min="2" max="8" value="5"
+                    oninput="document.getElementById('kval').textContent=this.value">
+                <span class="slider-val" id="kval">5</span>
+            </div>
+
+            <button class="run-btn" id="run-btn" onclick="runQuery()">Run Query →</button>
+            <div style="margin-top:0.65rem;font-size:0.72rem;color:var(--muted);text-align:center;">
+                Ctrl+Enter to submit
+            </div>
+        </div>
+
+        <!-- Response -->
+        <div class="resp-panel" id="resp-panel">
+            <div class="resp-empty" id="resp-empty">
+                <div class="icon">⚖️</div>
+                <p>Submit a compliance question to see<br>the cited agent response here.</p>
+            </div>
+
+            <div id="resp-loading" style="display:none;">
+                <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:1rem;">
+                    Agent pipeline running
+                </div>
+                <div class="load-steps">
+                    <div class="load-step" id="ls1"><div class="load-dot"></div>Checking input guardrails</div>
+                    <div class="load-step" id="ls2"><div class="load-dot"></div>Knowledge Agent: semantic retrieval (pgvector HNSW)</div>
+                    <div class="load-step" id="ls3"><div class="load-dot"></div>Analysis Agent: drafting cited response</div>
+                    <div class="load-step" id="ls4"><div class="load-dot"></div>Checking output guardrails</div>
+                    <div class="load-step" id="ls5"><div class="load-dot"></div>Writing to audit log</div>
+                </div>
+            </div>
+
+            <div id="resp-content" style="display:none;">
+                <div class="resp-meta" id="resp-meta"></div>
+                <div class="resp-text" id="resp-text"></div>
+                <div class="cits-section" id="cits-section"></div>
+            </div>
+
+            <div id="resp-error" style="display:none;">
+                <div class="err-box" id="err-text"></div>
+            </div>
+        </div>
+    </div>
+</section>
+</div><!-- /container -->
+
+<!-- ── Footer ────────────────────────────────────────────────────────────── -->
+<footer>
+    <p>
+        Regulatory Intelligence Agent · Reference implementation by
+        <strong>Faiz Faruqi</strong> ·
+        Not a production deployment at any named client.
+    </p>
+    <p>
+        <a href="https://github.com/faiz-faruqi/reg-intel-agent" target="_blank">GitHub</a> ·
+        <a href="/docs" target="_blank">Swagger API Docs</a> ·
+        Running on Railway Hobby + Neon · ~CAD $20–35/month total infrastructure cost
+    </p>
+</footer>
+
+<script>
+    function setQ(btn) {
+        document.getElementById('question').value = btn.textContent;
+    }
+
+    function showState(s) {
+        document.getElementById('resp-empty').style.display   = s==='empty'   ? 'flex'  : 'none';
+        document.getElementById('resp-loading').style.display = s==='loading' ? 'block' : 'none';
+        document.getElementById('resp-content').style.display = s==='content' ? 'block' : 'none';
+        document.getElementById('resp-error').style.display   = s==='error'   ? 'block' : 'none';
+    }
+
+    function advance(step) {
+        for (let i = 1; i <= 5; i++) {
+            const el = document.getElementById('ls' + i);
+            el.className = i < step ? 'load-step done' : i === step ? 'load-step active' : 'load-step';
+        }
+    }
+
+    function renderMd(text) {
+        const lines = text.split('\n');
+        let html = '', inUl = false;
+        for (const raw of lines) {
+            const line = raw.trim();
+            if (!line) {
+                if (inUl) { html += '</ul>'; inUl = false; }
+                continue;
+            }
+            const bold = s => s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            if (line.startsWith('## '))       html += `<h2>${bold(line.slice(3))}</h2>`;
+            else if (line.startsWith('### ')) html += `<h3>${bold(line.slice(4))}</h3>`;
+            else if (line.startsWith('- ') || line.startsWith('* ')) {
+                if (!inUl) { html += '<ul>'; inUl = true; }
+                html += `<li>${bold(line.slice(2))}</li>`;
+            } else {
+                if (inUl) { html += '</ul>'; inUl = false; }
+                html += `<p>${bold(line)}</p>`;
+            }
+        }
+        if (inUl) html += '</ul>';
+        return html;
+    }
+
+    async function runQuery() {
+        const question = document.getElementById('question').value.trim();
+        if (!question) return;
+        const top_k = parseInt(document.getElementById('top_k').value);
+
+        const btn = document.getElementById('run-btn');
+        btn.disabled = true; btn.textContent = 'Running…';
+        showState('loading');
+        advance(1);
+
+        const timers = [
+            setTimeout(() => advance(2), 900),
+            setTimeout(() => advance(3), 2200),
+            setTimeout(() => advance(4), 5500),
+            setTimeout(() => advance(5), 7800),
+        ];
+
+        try {
+            const res = await fetch('/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question, top_k }),
+            });
+
+            timers.forEach(clearTimeout);
+            advance(5);
+            await new Promise(r => setTimeout(r, 350));
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ detail: 'Unknown error' }));
+                throw new Error(err.detail || `HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+
+            document.getElementById('resp-meta').innerHTML = [
+                `<span class="meta-chip ok">✓ Guardrails passed</span>`,
+                `<span class="meta-chip acc">📎 ${data.citations.length} citation${data.citations.length!==1?'s':''}</span>`,
+                data.is_cited
+                    ? `<span class="meta-chip ok">✓ Fully cited</span>`
+                    : `<span class="meta-chip warn">⚠ Citation flag</span>`,
+                `<span class="meta-chip">top_k = ${top_k}</span>`,
+                `<span class="meta-chip">Knowledge + Analysis agents</span>`,
+            ].join('');
+
+            document.getElementById('resp-text').innerHTML = renderMd(data.response);
+
+            const cits = document.getElementById('cits-section');
+            if (data.citations.length > 0) {
+                cits.innerHTML = `<div class="cits-label">Sources</div>` +
+                    data.citations.map((c, i) =>
+                        `<div class="cit-item"><span class="cit-num">${i+1}</span>${c}</div>`
+                    ).join('');
+                cits.style.display = 'block';
+            } else {
+                cits.style.display = 'none';
+            }
+
+            showState('content');
+        } catch (err) {
+            timers.forEach(clearTimeout);
+            document.getElementById('err-text').textContent = `Error: ${err.message}`;
+            showState('error');
+        } finally {
+            btn.disabled = false; btn.textContent = 'Run Query →';
+        }
+    }
+
+    document.getElementById('question').addEventListener('keydown', e => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runQuery();
+    });
+</script>
+</body>
+</html>
