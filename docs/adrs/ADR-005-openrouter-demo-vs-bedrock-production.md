@@ -1,127 +1,124 @@
-# ADR-005: IAM Access Key (Railway) vs. IAM Role (AWS Compute)
+# ADR-005: OpenRouter (Demo) vs. Amazon Bedrock (Production)
 
 ## Status
 Accepted
 
 ## Date
-2026-06-05
+2026-06-07
 
 ## Context
 
-The API service needs credentials to call Amazon Bedrock from Railway. Two
-authentication mechanisms exist in AWS IAM:
+The system requires two model capabilities:
+1. **Text generation** — the Analysis Agent and Action Agent call an LLM to draft
+   compliance responses and JSON proposals
+2. **Text embeddings** — the ingest pipeline and Knowledge Agent embed documents
+   and queries for pgvector cosine similarity search
 
-**Option A — IAM access key (long-lived static credential)**
-An IAM user is created with a scoped policy. The `aws iam create-access-key`
-command (or `terraform apply`) generates an `AWS_ACCESS_KEY_ID` and
-`AWS_SECRET_ACCESS_KEY` pair. These are stored as environment variables in the
-host platform and rotated manually.
+Two provider options were evaluated:
 
-**Option B — IAM role with instance/task metadata credentials (short-lived)**
-An IAM role is attached to an AWS compute resource (EC2 instance, ECS task, App
-Runner service, Lambda function). The AWS SDK automatically retrieves and rotates
-short-lived credentials via the Instance Metadata Service (IMDS) or the
-ECS/App Runner credential provider. No static secrets exist in the environment.
+### Option A — Amazon Bedrock (direct)
 
-Railway is a third-party PaaS that runs containers on its own infrastructure.
-It is not AWS compute. The EC2 Instance Metadata Service, ECS task metadata
-endpoint, and App Runner credential provider are all AWS-internal mechanisms —
-they are not reachable from Railway containers.
+Amazon Bedrock provides managed access to foundation models (Anthropic Claude,
+Amazon Titan, Cohere, Meta Llama, Mistral) via a unified AWS API. Models are
+invoked via `boto3` with IAM credentials. Bedrock is the intended production
+model layer for regulated industries because it provides:
+- Data residency guarantees (models run in the configured AWS region)
+- No data used for model training (explicit contractual commitment)
+- Native integration with Bedrock Guardrails, Bedrock Knowledge Bases, and
+  CloudWatch logging
+- OSFI, SOC 2, HIPAA, and FedRAMP alignment
 
-An IAM role cannot be attached to a Railway service. Therefore Option B is
-architecturally unavailable in the demo tier.
+**Cons for demo tier:**
+- Requires AWS credentials (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` for
+  Railway, or an IAM role for AWS compute). See the IAM discussion below.
+- Not free — Claude Sonnet input/output tokens are billed per use
+  (~$3–15/1M tokens depending on model). Light demo usage: ~$7–20/month.
+- `boto3` API differs from the OpenAI SDK interface. The LangChain Bedrock
+  integration (`langchain-aws`) requires a separate client wrapper.
+
+### Option B — OpenRouter
+
+OpenRouter is a unified API gateway that routes to models from multiple providers
+(OpenAI, Anthropic, Google, Meta, Mistral, and others) using an **OpenAI-compatible
+REST interface**. Free-tier models are available at $0/request.
+
+**Model selected for demo:** `google/gemma-4-31b-it:free`
+
+Tested and validated:
+- Follows `[N]` citation format consistently (tested in `scripts/test_free_model.py`)
+- Produces valid JSON proposals for the Action Agent (`{title, body, labels}`)
+- 262K context window — more than sufficient for retrieved chunks
+
+**Embedding model:** `openai/text-embedding-3-small` via OpenRouter (1536-dim,
+negligible cost at demo query volume — fractions of a cent per month)
+
+**Pros:**
+- Free generation — $0 for `google/gemma-4-31b-it:free`
+- OpenAI-compatible API — LangChain's `ChatOpenAI` and `OpenAIEmbeddings` work
+  without any Bedrock-specific client code
+- No AWS credentials required at all in the demo tier — no IAM user, no access
+  key, no Bedrock-specific IAM policy
+- Model swap is a single env var: `OPENROUTER_MODEL_ID=<model_id>`
+
+**Cons:**
+- Free models have rate limits (~20 req/min, 200 req/day per OpenRouter free tier)
+  and may experience provider-side availability issues
+- No data residency guarantees — traffic routes through OpenRouter's infrastructure
+- Not suitable for a regulated production environment where data sovereignty is
+  a compliance requirement
+- Free model availability changes — models are added and removed without notice
 
 ## Decision
 
-Use an **IAM access key** (Option A) for the Railway demo tier, with the
-following least-privilege mitigations to compensate for the weaker credential
-type:
+**OpenRouter with `google/gemma-4-31b-it:free`** for the demo tier.
 
-### IAM user scope (terraform/iam_bedrock.tf)
-```hcl
-Statement = [
-  {
-    Sid    = "BedrockInvokeOnly"
-    Effect = "Allow"
-    Action = [
-      "bedrock:InvokeModel",
-      "bedrock:InvokeModelWithResponseStream"
-    ]
-    Resource = [
-      "arn:aws:bedrock:ca-central-1::foundation-model/anthropic.claude-3-5-sonnet*",
-      "arn:aws:bedrock:ca-central-1::foundation-model/anthropic.claude-3-haiku*",
-      "arn:aws:bedrock:ca-central-1::foundation-model/amazon.titan-embed*"
-    ]
-  }
-]
+The decisive factor is cost and operational simplicity. The free model eliminates
+generation cost entirely — the only non-zero cost is Railway Hobby compute
+(~$5–10/month). This makes the total infrastructure spend ~$5–10/month, down from
+the original estimate of ~$20–35/month with Bedrock.
+
+The OpenAI-compatible API is the key enabler: both `ChatOpenAI` and
+`OpenAIEmbeddings` are pointed at OpenRouter's base URL:
+
+```python
+# Generation (src/agents/analysis_agent.py, action_agent.py)
+ChatOpenAI(
+    model=settings.OPENROUTER_MODEL_ID,
+    api_key=settings.OPENROUTER_API_KEY,
+    base_url="https://openrouter.ai/api/v1",
+    temperature=0,
+)
+
+# Embeddings (src/agents/knowledge_agent.py)
+OpenAIEmbeddings(
+    model=settings.EMBEDDING_MODEL,
+    api_key=settings.OPENROUTER_API_KEY,
+    base_url="https://openrouter.ai/api/v1",
+    dimensions=settings.EMBEDDING_DIMENSIONS,
+)
 ```
 
-The IAM user `reg-intel-agent-demo` has **no console access, no other AWS
-service permissions, and no ability to create, modify, or delete any resource**
-beyond calling `bedrock:InvokeModel` on the three named model ARNs. A leaked
-credential cannot be used to access S3, EC2, RDS, or any other AWS service. The
-blast radius of a compromise is limited to Bedrock token spend, which is bounded
-by the AWS Budgets alert in `budget_alert.tf`.
+No Bedrock-specific code exists in the application. Swapping to Bedrock is a
+configuration change, not a code change — see the production path below.
 
-### Credential storage
-Credentials are stored **only** in:
-- Railway dashboard environment variables (encrypted at rest)
-- Local `.env` file (never committed — enforced by `.gitignore`)
+## IAM story: why no AWS credentials in the demo tier
 
-They are never hardcoded, never logged, and never included in Docker image layers.
+Because the demo tier uses OpenRouter (not Bedrock), **no AWS credentials are
+needed at all** in Railway. There is no IAM user, no access key, and no
+`AWS_ACCESS_KEY_ID` in the Railway environment.
 
-### Rotation policy
-The access key must be rotated **every 90 days** using:
-```bash
-aws iam create-access-key --user-name reg-intel-agent-demo
-# Update Railway env vars and local .env with new values
-aws iam delete-access-key --user-name reg-intel-agent-demo \
-  --access-key-id <old-key-id>
-```
+This is a security improvement over the original plan. The original design
+required an IAM access key (a long-lived static credential) stored in Railway
+env vars because Railway is not AWS compute and cannot assume an IAM role. By
+routing through OpenRouter instead, the entire AWS credential surface is
+eliminated from the demo tier.
 
-## Consequences
+### IAM in production (when Bedrock is activated)
 
-### What this buys
-- **Works with Railway**: the only viable option given the platform constraint.
-- **Simple ops**: one env var pair, standard boto3 credential chain (`AWS_ACCESS_KEY_ID`
-  + `AWS_SECRET_ACCESS_KEY` are picked up automatically without any SDK
-  configuration).
-- **Auditable IAM policy**: the Terraform resource is the source of truth; the
-  permissions are narrow, reviewable, and version-controlled.
+When the service moves to AWS App Runner with Amazon Bedrock:
 
-### What this costs (accepted trade-offs)
-- **Static, long-lived credential**: unlike role credentials (which expire every
-  15 minutes to 12 hours), an access key is valid until explicitly deleted or
-  deactivated. If leaked and not immediately detected, it remains exploitable.
-- **Manual rotation burden**: role credentials rotate automatically; access keys
-  require a deliberate rotation process every 90 days. Forgetting is a real risk
-  in a solo/small-team project.
-- **No credential audit trail by default**: CloudTrail records the API calls made
-  with the key but does not alert on inactivity or anomalous usage patterns
-  without additional GuardDuty configuration.
-- **No SCP or permission boundary**: in a real enterprise, the IAM user would sit
-  inside an AWS Organization with a Service Control Policy that prevents privilege
-  escalation even if the policy were accidentally broadened. This demo account has
-  no SCP layer.
-
-## Production trigger
-
-Switch to an IAM role when **any one** of the following is true:
-
-1. The API service moves to **AWS compute** (App Runner, ECS Fargate, EC2).
-   At that point, attaching a role is a one-line Terraform change and eliminates
-   the static credential entirely.
-2. A **security audit or compliance review** flags the long-lived key as a
-   finding (common in OSFI, SOC 2, or FedRAMP assessments).
-3. The project **onboards a second developer** with production access — shared
-   static keys violate least-privilege per-identity accountability.
-
-## Production path (out of scope for this phase)
-
-When the service moves to AWS App Runner:
-
+1. An IAM role is attached to the App Runner task — no static credentials:
 ```hcl
-# App Runner instance role — replaces the IAM user + access key entirely
 resource "aws_iam_role" "api_task_role" {
   name = "reg-intel-agent-api-task"
   assume_role_policy = jsonencode({
@@ -132,37 +129,116 @@ resource "aws_iam_role" "api_task_role" {
     }]
   })
 }
-
-resource "aws_iam_role_policy_attachment" "bedrock_invoke" {
-  role       = aws_iam_role.api_task_role.name
-  policy_arn = aws_iam_policy.bedrock_invoke.arn  # same policy, different principal
-}
 ```
 
-The application code does not change. The boto3 credential chain picks up the
-instance role automatically — `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` env
-vars are simply removed. The IAM user `reg-intel-agent-demo` is then deleted.
+2. The role is scoped to `bedrock:InvokeModel` on target model ARNs only:
+```hcl
+Action = [
+  "bedrock:InvokeModel",
+  "bedrock:InvokeModelWithResponseStream"
+]
+Resource = [
+  "arn:aws:bedrock:ca-central-1::foundation-model/anthropic.claude-3-5-sonnet*",
+  "arn:aws:bedrock:ca-central-1::foundation-model/amazon.titan-embed*"
+]
+```
 
-| Concern | Demo (now) | Production |
-|---|---|---|
-| Credential type | IAM access key (static) | IAM role (dynamic, auto-rotating) |
-| Rotation | Manual, every 90 days | Automatic (15 min – 12 hr TTL) |
-| Storage | Railway env vars + local .env | Not stored anywhere — IMDS only |
-| Blast radius if leaked | Bedrock invoke on 3 model ARNs | N/A — no static credential exists |
-| Terraform change | `aws_iam_user` + `aws_iam_access_key` | `aws_iam_role` + instance attachment |
-| Cost delta | $0 | $0 (IAM is free; App Runner compute is separate) |
+3. `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` env vars are removed.
+   The boto3 credential chain picks up the instance role automatically.
 
-## Interview talking point
+## Production swap path
 
-The access key is a deliberate, documented concession to the platform constraint —
-not an oversight. The policy scope is tight enough that a credential leak's blast
-radius is limited to Bedrock token spend, and the budget alert is the backstop for
-even that. In production the entire credential surface disappears; the role
-assumption is handled by AWS internally and the application code is unchanged.
-That is the security posture story: make the trade-off explicit, bound the risk,
-and show the clean exit path.
+Swapping from OpenRouter to Bedrock requires changes to **two files only**:
+
+### 1. `src/config.py` — update defaults
+```python
+# Before (OpenRouter)
+OPENROUTER_API_KEY: str
+OPENROUTER_MODEL_ID: str = "google/gemma-4-31b-it:free"
+EMBEDDING_MODEL: str = "text-embedding-3-small"
+EMBEDDING_DIMENSIONS: int = 1536
+
+# After (Bedrock)
+AWS_REGION: str = "ca-central-1"
+BEDROCK_MODEL_ID: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+BEDROCK_EMBEDDING_MODEL: str = "amazon.titan-embed-text-v2:0"
+EMBEDDING_DIMENSIONS: int = 1024  # ⚠ dimension change — requires DB rebuild
+```
+
+### 2. `src/agents/analysis_agent.py` and `action_agent.py` — swap client
+```python
+# Before (OpenRouter via ChatOpenAI)
+from langchain_openai import ChatOpenAI
+model = ChatOpenAI(model=settings.OPENROUTER_MODEL_ID,
+                   api_key=settings.OPENROUTER_API_KEY,
+                   base_url="https://openrouter.ai/api/v1")
+
+# After (Bedrock via ChatBedrock)
+from langchain_aws import ChatBedrock
+model = ChatBedrock(model_id=settings.BEDROCK_MODEL_ID,
+                    region_name=settings.AWS_REGION)
+```
+
+### 3. `src/agents/knowledge_agent.py` — swap embeddings client
+```python
+# Before (OpenRouter via OpenAIEmbeddings)
+from langchain_openai import OpenAIEmbeddings
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small",
+                               api_key=settings.OPENROUTER_API_KEY,
+                               base_url="https://openrouter.ai/api/v1")
+
+# After (Bedrock Titan via BedrockEmbeddings)
+from langchain_aws import BedrockEmbeddings
+embeddings = BedrockEmbeddings(model_id="amazon.titan-embed-text-v2:0",
+                                region_name=settings.AWS_REGION)
+```
+
+### ⚠ Embedding dimension change requires a DB rebuild
+
+`text-embedding-3-small` produces 1536-dim vectors. Titan Embeddings V2 produces
+1024-dim vectors. The `documents` table schema is `vector(1536)` — changing models
+requires:
+
+```sql
+-- Rebuild required on model swap
+DROP TABLE documents;
+-- Re-apply init-db.sql with vector(1024)
+-- Re-run python -m src.ingest
+```
+
+This is a one-time migration cost. Lock the embedding model before seeding
+production data.
+
+## Provider comparison
+
+| Concern | Demo (OpenRouter) | Production (Bedrock) |
+|---------|------------------|---------------------|
+| Generation cost | $0 (free model) | ~$3–15/1M tokens |
+| Embedding cost | ~$0.02/1M tokens | ~$0.02/1M tokens (Titan) |
+| Data residency | No guarantee | AWS region-locked |
+| Compliance | Not suitable for regulated data | SOC 2, HIPAA, OSFI-aligned |
+| Model quality | Good (Gemma 4 31B) | Higher (Claude Sonnet) |
+| Rate limits | OpenRouter free tier (~200/day) | AWS account limits (configurable) |
+| AWS credentials required | No | Yes (IAM role on AWS compute) |
+| Client code change | — | 2 files, ~10 lines |
+
+## Consequences
+
+- **Positive:** $0 generation cost at demo scale. No AWS credentials in Railway.
+  Clean, zero-surface demo environment.
+- **Positive:** OpenAI-compatible API means the swap to Bedrock is a ~10-line
+  client change — not a rewrite. Agents, state, graph, and guardrails are
+  unchanged.
+- **Negative:** Free model rate limits (~200 req/day on OpenRouter free tier)
+  are a ceiling. Mitigated by application-level rate limiting (ADR-003 approach,
+  `slowapi` — 30/day per IP on `/query`).
+- **Negative:** No data residency. Demo queries should use synthetic or public
+  regulatory text — not real client data.
+- **Negative:** Embedding dimension change (1536 → 1024) on Bedrock swap requires
+  a full DB rebuild. Must be planned as a migration step.
 
 ## References
-- [AWS IAM best practices — use roles instead of long-term credentials](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)
-- [AWS App Runner IAM roles](https://docs.aws.amazon.com/apprunner/latest/dg/security-iam-roles.html)
-- ADR-004 — Railway Hobby vs. AWS App Runner/ECS (hosting transition trigger)
+- ADR-003 — Application guardrails vs. Bedrock Guardrails
+- ADR-004 — Railway Hobby vs. AWS App Runner/ECS
+- [OpenRouter free model list](https://openrouter.ai/models?order=throughput-highest&supported_parameters=free)
+- [Amazon Bedrock model IDs](https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html)
