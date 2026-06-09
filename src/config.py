@@ -1,6 +1,7 @@
 """Configuration and environment variable loading."""
 
 from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

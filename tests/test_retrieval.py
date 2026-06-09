@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from fastapi.testclient import TestClient
 
 from src.main import app
@@ -124,6 +123,7 @@ class TestSupervisor:
 
     def test_routes_to_end_when_draft_present(self):
         from langgraph.graph import END
+
         from src.agents.supervisor import supervisor
 
         result = supervisor({"retrieved_chunks": [{"id": 1}], "draft_response": "Some answer."})

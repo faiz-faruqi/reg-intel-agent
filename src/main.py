@@ -245,6 +245,7 @@ class SignupRequest(BaseModel):
 
 if __name__ == "__main__":
     import uvicorn
+
     from src.config import settings
 
     uvicorn.run(app, host="0.0.0.0", port=settings.PORT)

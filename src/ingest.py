@@ -58,11 +58,11 @@ class _HTMLStripper(HTMLParser):
             self._parts.append(data)
 
     def handle_entityref(self, name: str) -> None:
-        _ENTITIES = {"ldquo": "“", "rdquo": "”", "mdash": "—",
+        _entities = {"ldquo": """, "rdquo": """, "mdash": "—",
                      "ndash": "–", "amp": "&", "lt": "<", "gt": ">",
                      "copy": "©", "trade": "™", "middot": "·"}
         if not self._skip:
-            self._parts.append(_ENTITIES.get(name, ""))
+            self._parts.append(_entities.get(name, ""))
 
     def get_text(self) -> str:
         lines = [" ".join(line.split()) for line in "".join(self._parts).splitlines()]
