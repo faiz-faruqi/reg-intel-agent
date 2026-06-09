@@ -1,6 +1,7 @@
 """Knowledge Agent: embeds the query and retrieves relevant documents via pgvector."""
 
 import logging
+import time
 from functools import lru_cache
 
 from langchain_openai import OpenAIEmbeddings
@@ -16,13 +17,29 @@ AGENT_NAME = "knowledge_agent"
 
 @lru_cache(maxsize=1)
 def _embeddings_model() -> OpenAIEmbeddings:
-    """Return a cached embeddings model instance pointed at OpenRouter."""
     return OpenAIEmbeddings(
         model=settings.EMBEDDING_MODEL,
         api_key=settings.OPENROUTER_API_KEY,
         base_url="https://openrouter.ai/api/v1",
         dimensions=settings.EMBEDDING_DIMENSIONS,
+        timeout=20,
+        max_retries=2,
     )
+
+
+def _embed_with_retry(model: OpenAIEmbeddings, text: str, max_attempts: int = 3) -> list[float]:
+    """Retry embedding calls on transient errors."""
+    last_exc: Exception | None = None
+    for attempt in range(max_attempts):
+        try:
+            return model.embed_query(text)
+        except Exception as exc:
+            last_exc = exc
+            if attempt < max_attempts - 1:
+                wait = 2 ** attempt
+                logger.warning("Embedding call failed (attempt %d/%d), retrying in %ds: %s", attempt + 1, max_attempts, wait, exc)
+                time.sleep(wait)
+    raise last_exc
 
 
 def knowledge_agent(state: AgentState) -> AgentState:
@@ -34,7 +51,7 @@ def knowledge_agent(state: AgentState) -> AgentState:
     top_k: int = state.get("top_k", 5)
 
     logger.info("%s: embedding question", AGENT_NAME)
-    embedding = _embeddings_model().embed_query(question)
+    embedding = _embed_with_retry(_embeddings_model(), question)
 
     chunks = similarity_search(embedding, top_k=top_k)
     logger.info("%s: retrieved %d chunks", AGENT_NAME, len(chunks))

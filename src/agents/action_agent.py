@@ -2,6 +2,7 @@
 
 import json
 import logging
+import time
 from functools import lru_cache
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -44,7 +45,24 @@ def _chat_model() -> ChatOpenAI:
         api_key=settings.OPENROUTER_API_KEY,
         base_url="https://openrouter.ai/api/v1",
         temperature=0,
+        timeout=30,
+        max_retries=2,
     )
+
+
+def _invoke_with_retry(model: ChatOpenAI, messages: list, max_attempts: int = 3):
+    """Retry LLM calls on transient errors (e.g. OpenRouter 500s)."""
+    last_exc: Exception | None = None
+    for attempt in range(max_attempts):
+        try:
+            return model.invoke(messages)
+        except Exception as exc:
+            last_exc = exc
+            if attempt < max_attempts - 1:
+                wait = 2 ** attempt
+                logger.warning("LLM call failed (attempt %d/%d), retrying in %ds: %s", attempt + 1, max_attempts, wait, exc)
+                time.sleep(wait)
+    raise last_exc
 
 
 def _extract_json(content: str) -> dict:
@@ -87,7 +105,7 @@ def action_agent(state: AgentState) -> AgentState:
     ]
 
     logger.info("%s: generating action proposal", AGENT_NAME)
-    response = _chat_model().invoke(messages)
+    response = _invoke_with_retry(_chat_model(), messages)
     proposal = _extract_json(response.content)
 
     if not proposal:

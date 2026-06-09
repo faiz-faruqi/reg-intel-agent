@@ -3,12 +3,21 @@
 import logging
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from src.config import settings
 
 logger = logging.getLogger(__name__)
 
 _GITHUB_API = "https://api.github.com"
+
+
+def _session() -> requests.Session:
+    s = requests.Session()
+    retry = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
+    s.mount("https://", HTTPAdapter(max_retries=retry))
+    return s
 
 
 def create_github_issue(
@@ -35,7 +44,7 @@ def create_github_issue(
     if labels:
         payload["labels"] = labels
 
-    resp = requests.post(url, json=payload, headers=headers, timeout=15)
+    resp = _session().post(url, json=payload, headers=headers, timeout=15)
     resp.raise_for_status()
 
     data = resp.json()

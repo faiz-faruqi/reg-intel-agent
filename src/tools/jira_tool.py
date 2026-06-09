@@ -4,10 +4,19 @@ import base64
 import logging
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from src.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _session() -> requests.Session:
+    s = requests.Session()
+    retry = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
+    s.mount("https://", HTTPAdapter(max_retries=retry))
+    return s
 
 
 def create_jira_issue(
@@ -63,7 +72,7 @@ def create_jira_issue(
         payload["fields"]["labels"] = labels
 
     api_url = f"{settings.JIRA_URL.rstrip('/')}/rest/api/3/issue"
-    resp = requests.post(api_url, json=payload, headers=headers, timeout=15)
+    resp = _session().post(api_url, json=payload, headers=headers, timeout=15)
     resp.raise_for_status()
 
     data = resp.json()
