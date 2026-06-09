@@ -372,7 +372,7 @@
         <div class="pipe-step gate">
             <div class="pipe-icon">👤</div>
             <div class="pipe-name">Human Approval Gate</div>
-            <div class="pipe-desc">Any write action (GitHub issue, ticket) is proposed and the graph pauses. A human must explicitly approve before any write executes.</div>
+            <div class="pipe-desc">Any write action (Jira ticket, GitHub issue) is proposed and the graph pauses. A human must explicitly approve before any write executes.</div>
         </div>
         <div class="pipe-step">
             <div class="pipe-icon">📋</div>
@@ -441,7 +441,7 @@
                     <div class="step-title">Action proposal + HITL gate (CLI mode)</div>
                     <div class="step-body">
                         Action Agent generates a JSON proposal <code>{title, body, labels}</code>
-                        for a GitHub issue. LangGraph's <code>interrupt_before=["human_gate"]</code>
+                        for a Jira ticket or GitHub issue. LangGraph's <code>interrupt_before=["human_gate"]</code>
                         pauses the graph. The CLI prompts for <code>approve/reject</code>, then calls
                         <code>graph.update_state()</code> and resumes — no write without human intent.
                     </div>
