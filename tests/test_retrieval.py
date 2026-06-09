@@ -24,9 +24,10 @@ class TestKnowledgeAgent:
         }
     ]
 
+    @patch("src.agents.knowledge_agent.write_audit_log")
     @patch("src.agents.knowledge_agent.similarity_search", return_value=FAKE_CHUNKS)
     @patch("src.agents.knowledge_agent._embeddings_model")
-    def test_returns_chunks(self, mock_model, mock_search):
+    def test_returns_chunks(self, mock_model, mock_search, mock_audit):
         from src.agents.knowledge_agent import knowledge_agent
 
         mock_model.return_value.embed_query.return_value = [0.1] * 1536
@@ -38,9 +39,10 @@ class TestKnowledgeAgent:
         assert len(result["retrieved_chunks"]) == 1
         assert result["retrieved_chunks"][0]["title"] == "OSFI E-23 Model Risk"
 
+    @patch("src.agents.knowledge_agent.write_audit_log")
     @patch("src.agents.knowledge_agent.similarity_search", return_value=[])
     @patch("src.agents.knowledge_agent._embeddings_model")
-    def test_empty_retrieval(self, mock_model, mock_search):
+    def test_empty_retrieval(self, mock_model, mock_search, mock_audit):
         from src.agents.knowledge_agent import knowledge_agent
 
         mock_model.return_value.embed_query.return_value = [0.0] * 1536
