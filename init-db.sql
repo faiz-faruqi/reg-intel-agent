@@ -60,3 +60,11 @@ CREATE TABLE IF NOT EXISTS documents (
 -- HNSW index: works well at any dataset size (unlike IVFFlat which needs ~hundreds of rows).
 -- Demo doc set (~20-50 docs) would be slower with IVFFlat. See ADR-002.
 CREATE INDEX IF NOT EXISTS documents_embedding_idx ON documents USING hnsw (embedding vector_cosine_ops);
+
+-- Demo visitor email capture
+CREATE TABLE IF NOT EXISTS demo_signups (
+    id         SERIAL PRIMARY KEY,
+    email      VARCHAR(255) NOT NULL,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

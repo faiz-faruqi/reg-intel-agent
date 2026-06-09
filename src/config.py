@@ -41,9 +41,18 @@ class Settings(BaseSettings):
     LANGSMITH_PROJECT: str = "reg-intel-agent"
     LANGSMITH_TRACING_V2: str = "true"
 
-    # GitHub (Phase 2 — Action Agent)
+    # Ticket backend — "github" or "jira" (controls /execute endpoint)
+    TICKET_BACKEND: str = "github"
+
+    # GitHub
     GITHUB_TOKEN: str | None = None
     GITHUB_REPO: str = "faiz-faruqi/reg-intel-agent"
+
+    # Jira Cloud (optional — set TICKET_BACKEND=jira to activate)
+    JIRA_URL: str | None = None          # e.g. https://yourorg.atlassian.net
+    JIRA_EMAIL: str | None = None        # Atlassian account email
+    JIRA_API_TOKEN: str | None = None    # Atlassian API token
+    JIRA_PROJECT_KEY: str | None = None  # e.g. COMP
 
     # Application
     PORT: int = 8000

@@ -654,20 +654,33 @@
             <!-- Proposal panel — shown by runPropose() only -->
             <div id="proposal-block" style="display:none;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
                 <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--warning);margin-bottom:0.65rem;">
-                    ⚡ Action Agent — Proposed GitHub Issue
+                    ⚡ Action Agent — Proposed Ticket
                 </div>
                 <div id="proposal-content"
                     style="background:var(--surface2);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:1rem;font-size:0.82rem;line-height:1.6;">
                 </div>
-                <div style="margin-top:0.75rem;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:0.75rem 1rem;">
-                    <div style="font-size:0.72rem;font-weight:700;color:var(--warning);margin-bottom:0.25rem;">👤 HITL Gate — Paused</div>
-                    <div style="font-size:0.78rem;color:var(--muted);">
-                        In CLI mode (<code style="font-family:monospace;font-size:0.72rem;">python -m src.cli</code>), the graph pauses here via
-                        <code style="font-family:monospace;font-size:0.72rem;">interrupt_before=["human_gate"]</code>
-                        and waits for an explicit <strong>approve</strong> or <strong>reject</strong>.
-                        No write executes without human intent. The decision is appended to the audit log either way.
+
+                <!-- HITL gate: live approve / reject -->
+                <div id="hitl-gate" style="margin-top:0.75rem;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:0.75rem 1rem;">
+                    <div style="font-size:0.72rem;font-weight:700;color:var(--warning);margin-bottom:0.5rem;">👤 HITL Gate — Awaiting Decision</div>
+                    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem;">
+                        The Action Agent has proposed a ticket. No write has executed.
+                        Approve to create the ticket in the configured backend, or reject to log the decision and take no action.
+                    </div>
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                        <button id="approve-btn" onclick="approveAction()"
+                            style="padding:0.45rem 1rem;font-size:0.8rem;font-weight:600;border-radius:6px;border:none;background:var(--success);color:#fff;cursor:pointer;">
+                            ✓ Approve &amp; Create Ticket
+                        </button>
+                        <button id="reject-btn" onclick="rejectAction()"
+                            style="padding:0.45rem 1rem;font-size:0.8rem;font-weight:600;border-radius:6px;border:1px solid var(--danger);background:transparent;color:var(--danger);cursor:pointer;">
+                            ✗ Reject
+                        </button>
                     </div>
                 </div>
+
+                <!-- Result shown after approve/reject -->
+                <div id="hitl-result" style="display:none;margin-top:0.65rem;border-radius:8px;padding:0.65rem 1rem;font-size:0.82rem;"></div>
             </div>
 
             <div id="resp-error" style="display:none;">
@@ -677,6 +690,29 @@
     </div>
 </section>
 </div><!-- /container -->
+
+<!-- ── Email capture ─────────────────────────────────────────────────────── -->
+<section style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:2.5rem 2rem;">
+    <div style="max-width:480px;margin:0 auto;text-align:center;">
+        <div style="font-size:1rem;font-weight:700;margin-bottom:0.35rem;">Stay in the loop</div>
+        <div style="font-size:0.82rem;color:var(--muted);margin-bottom:1.1rem;">
+            Get notified when this project ships new features or moves toward production.
+            No spam — one email when something meaningful changes.
+        </div>
+        <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;">
+            <input id="signup-email" type="email" placeholder="your@email.com"
+                style="flex:1;min-width:200px;max-width:280px;padding:0.5rem 0.75rem;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:0.85rem;outline:none;">
+            <button onclick="submitSignup()"
+                style="padding:0.5rem 1.1rem;font-size:0.85rem;font-weight:600;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;">
+                Notify me
+            </button>
+        </div>
+        <div id="signup-msg" style="margin-top:0.6rem;font-size:0.78rem;min-height:1.1rem;"></div>
+        <div style="margin-top:0.5rem;font-size:0.68rem;color:var(--muted);">
+            Your email is only used to notify you about this project. PIPEDA compliant.
+        </div>
+    </div>
+</section>
 
 <!-- ── Footer ────────────────────────────────────────────────────────────── -->
 <footer>
@@ -688,11 +724,13 @@
     <p>
         <a href="https://github.com/faiz-faruqi/reg-intel-agent" target="_blank">GitHub</a> ·
         <a href="/docs" target="_blank">Swagger API Docs</a> ·
-        Running on Railway Hobby + Neon · ~CAD $20–35/month total infrastructure cost
+        Running on Railway Hobby + Neon · ~CAD $5–10/month total infrastructure cost
     </p>
 </footer>
 
 <script>
+    let currentProposal = null;
+
     function setQ(btn) {
         document.getElementById('question').value = btn.textContent;
     }
@@ -819,6 +857,11 @@
         document.getElementById('ls4-label').textContent = 'Checking output guardrails';
         document.getElementById('ls5-label').textContent = 'Writing to audit log';
         document.getElementById('proposal-block').style.display = 'none';
+        document.getElementById('hitl-gate').style.display = 'block';
+        document.getElementById('hitl-result').style.display = 'none';
+        document.getElementById('approve-btn').disabled = false;
+        document.getElementById('reject-btn').disabled = false;
+        currentProposal = null;
 
         showState('loading');
         advance(1);
@@ -872,6 +915,9 @@
                 cits.style.display = 'none';
             }
 
+            // Store proposal for approve/reject
+            currentProposal = data.proposed_action;
+
             // Render proposal
             const p = data.proposed_action;
             document.getElementById('proposal-content').innerHTML = `
@@ -899,6 +945,90 @@
             runBtn.disabled = false; propBtn.disabled = false;
             propBtn.textContent = 'Run Full Pipeline + Propose Action →';
             document.getElementById('ls6').style.display = 'none';
+        }
+    }
+
+    async function approveAction() {
+        if (!currentProposal) return;
+        const approveBtn = document.getElementById('approve-btn');
+        const rejectBtn  = document.getElementById('reject-btn');
+        approveBtn.disabled = true; rejectBtn.disabled = true;
+        approveBtn.textContent = 'Creating ticket…';
+
+        try {
+            const res = await fetch('/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title:  currentProposal.title  || '',
+                    body:   currentProposal.body   || '',
+                    labels: currentProposal.labels || [],
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+
+            const resultEl = document.getElementById('hitl-result');
+            resultEl.style.cssText = 'display:block;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:0.65rem 1rem;font-size:0.82rem;';
+            resultEl.innerHTML = `<span style="color:var(--success);font-weight:700;">✓ Ticket created</span>
+                &nbsp;·&nbsp; <strong>${data.backend.toUpperCase()}</strong>: ${data.key}
+                &nbsp;·&nbsp; <a href="${data.url}" target="_blank" style="color:var(--accent);">View →</a>
+                <br><span style="font-size:0.72rem;color:var(--muted);">Decision recorded in audit log.</span>`;
+            document.getElementById('hitl-gate').style.display = 'none';
+        } catch (err) {
+            const resultEl = document.getElementById('hitl-result');
+            resultEl.style.cssText = 'display:block;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:0.65rem 1rem;font-size:0.82rem;';
+            resultEl.innerHTML = `<span style="color:var(--danger);font-weight:700;">✗ Error</span>: ${err.message}`;
+            approveBtn.disabled = false; rejectBtn.disabled = false;
+            approveBtn.textContent = '✓ Approve & Create Ticket';
+        }
+    }
+
+    async function rejectAction() {
+        if (!currentProposal) return;
+        const approveBtn = document.getElementById('approve-btn');
+        const rejectBtn  = document.getElementById('reject-btn');
+        approveBtn.disabled = true; rejectBtn.disabled = true;
+
+        try {
+            await fetch('/reject', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: currentProposal.title || '' }),
+            });
+        } catch (_) { /* log failure is non-fatal */ }
+
+        const resultEl = document.getElementById('hitl-result');
+        resultEl.style.cssText = 'display:block;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:0.65rem 1rem;font-size:0.82rem;';
+        resultEl.innerHTML = `<span style="color:var(--danger);font-weight:700;">✗ Rejected</span> — no ticket created.
+            <span style="font-size:0.72rem;color:var(--muted);">Decision recorded in audit log.</span>`;
+        document.getElementById('hitl-gate').style.display = 'none';
+    }
+
+    async function submitSignup() {
+        const email = document.getElementById('signup-email').value.trim();
+        const msg   = document.getElementById('signup-msg');
+        if (!email || !email.includes('@')) {
+            msg.style.color = 'var(--danger)';
+            msg.textContent = 'Please enter a valid email address.';
+            return;
+        }
+        msg.style.color = 'var(--muted)';
+        msg.textContent = 'Submitting…';
+        try {
+            const res = await fetch('/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+            msg.style.color = 'var(--success)';
+            msg.textContent = '✓ ' + data.message;
+            document.getElementById('signup-email').value = '';
+        } catch (err) {
+            msg.style.color = 'var(--danger)';
+            msg.textContent = 'Error: ' + err.message;
         }
     }
 

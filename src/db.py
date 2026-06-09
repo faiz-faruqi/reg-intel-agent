@@ -111,3 +111,18 @@ def write_audit_log(
                 ),
             )
     logger.debug("audit_log: agent=%s step=%s", agent_name, step_type)
+
+
+# ---------------------------------------------------------------------------
+# Demo visitor email capture
+# ---------------------------------------------------------------------------
+
+def store_signup(email: str, ip_address: str | None = None) -> None:
+    """Insert a demo visitor email into demo_signups."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO demo_signups (email, ip_address) VALUES (%s, %s)",
+                (email, ip_address),
+            )
+    logger.debug("demo_signup: %s", email)
