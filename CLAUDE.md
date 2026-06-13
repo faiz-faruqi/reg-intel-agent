@@ -27,17 +27,29 @@ Two-tier strategy:
 - **Audit log:** Same Neon DB, `audit_log` table — append-only enforced by
   `BEFORE DELETE` and `BEFORE UPDATE` triggers
 - **Tracing:** LangSmith (external SaaS, API key in Railway env vars)
-- **GitHub tool:** `src/tools/github_tool.py` — GitHub REST API via `requests`;
-  creates issues after human approval (CLI only)
-- **Rate limiting:** `slowapi` — `/query` 10/min 30/day, `/propose` 5/min 15/day per IP
-- **Demo UI:** `src/static/index.html` served from `GET /` — explains architecture,
-  governance pillars, and includes a live query form + propose-action demo
+- **GitHub tool:** `src/tools/github_tool.py` — GitHub REST API via `requests`
+- **Jira tool:** `src/tools/jira_tool.py` — Jira Cloud REST API v3, ADF body format,
+  Basic auth; `TICKET_BACKEND` env var switches between `github` and `jira`
+- **Rate limiting:** `slowapi` — `/query` 10/min 20/day, `/propose` 5/min 10/day,
+  `/execute` 2/min 5/day, `/reject` 5/min 10/day, `/signup` 1/min 3/day per IP
+- **Demo UI:** `src/static/index.html` — architecture diagram, live query form,
+  propose-action demo with live Approve/Reject HITL buttons, email capture
+- **Email capture:** `demo_signups` table in Neon; `/signup` endpoint
+- **Eval harness:** `scripts/eval.py` — 10 fixed compliance questions, scores
+  `cited`, `source_hit`, `faithful`; run locally before demos
+- **Demo script:** `docs/demo-script.md` — 3–4 min interview walkthrough
+- **Seed documents:** GDPR, ISO 27001, Basel III, OSFI E-23, OSFI B-20, PIPEDA
+  (6 frameworks, 13 chunks in Neon)
+- **CI:** GitHub Actions — ruff lint + pytest (23 tests, all mocked, no DB/API in CI)
 - **Custom domain:** `reg-intel.demo.cloudkraft.com` → Railway via Bluehost DNS CNAME
 
 ### API paths
 - `GET /` — Demo UI (HTML)
 - `POST /query` — Knowledge + Analysis agents (read-only, rate limited)
 - `POST /propose` — All 3 agents, returns proposal without executing (rate limited)
+- `POST /execute` — Creates Jira or GitHub ticket after human approval (rate limited)
+- `POST /reject` — Logs rejection decision to audit log (rate limited)
+- `POST /signup` — Stores demo email in `demo_signups` table (rate limited)
 - `GET /health` — Health check
 - `GET /docs` — Swagger UI
 
@@ -57,7 +69,7 @@ See ADRs for the transition trigger and what changes.
 ## Agents (3)
 1. **Knowledge Agent** — embeds question, retrieves top-k chunks via pgvector HNSW
 2. **Analysis Agent** — drafts cited response; `is_cited=False` flags un-cited output
-3. **Action Agent** — proposes GitHub issue as JSON `{title, body, labels}`;
+3. **Action Agent** — proposes Jira/GitHub ticket as JSON `{title, body, labels}`;
    NEVER executes without explicit human approval
 
 ## Governance requirements (non-negotiable)
@@ -90,10 +102,12 @@ See ADRs for the transition trigger and what changes.
 
 ## Scope discipline
 - 3 agents max — done
-- ONE MCP/tool integration (GitHub REST) — done; second is stretch only
-- Web UI delivered (was stretch — now done)
+- Two tool integrations: GitHub REST + Jira Cloud REST — both done
+- Web UI with live HITL, email capture — done
+- Eval harness 10/10 faithful — done
+- CI green (23/23 tests) — done
+- All 5 ADRs written — done
 - Do NOT build AWS infra beyond IAM user + budget alert in this phase
-- ADRs are the next priority after CI
 
 ## Definition of done
 A phase is complete when its slice runs end-to-end, is traced in LangSmith,

@@ -73,7 +73,7 @@ response → propose an action under human approval.
 
 ---
 
-## Phase 3 — Harden, package, demo-ready 🔄 IN PROGRESS
+## Phase 3 — Harden, package, demo-ready ✅ COMPLETE
 
 - [x] README — setup guide, architecture diagram, governance table, cost section,
       production path, pre-warm note
@@ -81,13 +81,21 @@ response → propose an action under human approval.
       governance pillars, pipeline flow, live query form + propose-action demo
 - [x] Custom domain resolves: `reg-intel.demo.cloudkraft.com`
 - [x] Free model tested and validated: `google/gemma-4-31b-it:free` (citations pass)
-- [ ] **GitHub Actions CI** — ruff lint + pytest on push to main
-- [ ] **ADRs** — complete all 5 (stubs exist, need substance — interview artifacts)
-- [ ] **Timeouts + retries** — wrap OpenRouter and GitHub calls
-- [ ] **Eval harness** — 5–10 fixed compliance questions scored for faithfulness
-- [ ] **Demo script** — written walkthrough for 3–4 min interview demo
+- [x] **GitHub Actions CI** — ruff lint + pytest on push to main (23/23 tests green)
+- [x] **ADRs** — all 5 written with full substance (interview artifacts)
+- [x] **Timeouts + retries** — `urllib3.Retry` on GitHub/Jira tools; `_invoke_with_retry`
+      on LLM calls; `_embed_with_retry` on embedding calls
+- [x] **Eval harness** — `scripts/eval.py`, 10 fixed compliance questions, 10/10 faithful
+- [x] **Demo script** — `docs/demo-script.md`, 3–4 min walkthrough with 5 follow-up Q&As
+- [x] **Jira integration** — `src/tools/jira_tool.py`; `TICKET_BACKEND` env var switches
+      GitHub ↔ Jira; `/execute` endpoint dispatches accordingly
+- [x] **UI HITL** — Approve/Reject buttons on propose result; `/execute` + `/reject`
+      endpoints; both decisions written to audit log
+- [x] **Email capture** — `/signup` endpoint + `demo_signups` table in Neon
+- [x] **Seed documents expanded** — Basel III, OSFI E-23, OSFI B-20, PIPEDA added
+      (6 regulatory frameworks, 13 chunks total)
 
-- **Done when:** CI green; ADRs written; live URL works end-to-end; demo script ready.
+- **Done when:** CI green; ADRs written; live URL works end-to-end; demo script ready. ✅
 
 ---
 
@@ -103,7 +111,7 @@ When there is budget and a real engagement:
 ---
 
 ## Stretch (only after Phase 3 is solid)
-- [ ] Second tool integration (Jira or Confluence)
+- [x] Second tool integration — Jira Cloud REST API (done in Phase 3)
 - [ ] Azure OpenAI swap path (config-only, shows vendor portability)
 - [ ] Bedrock swap (change client + rebuild embeddings at 1024-dim)
 

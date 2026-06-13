@@ -1,0 +1,176 @@
+{
+  "metadata": {
+    "name": "Enterprise AI Assurance - Golden Dataset v1",
+    "description": "Reference question/answer set used to evaluate the Regulatory Intelligence Agent. Ground-truth answers and reference contexts are authored as concise, original summaries of publicly available regulatory guidance. Replace or extend these with answers reviewed by a subject-matter expert before using results as formal evidence.",
+    "domain": "AI governance and financial-services model risk regulation",
+    "version": "1.0",
+    "scoring_notes": "Each item carries a category and an expected_behaviour tag. 'answerable' items test retrieval and grounded generation. 'out_of_scope' items test refusal correctness (the system should decline or defer rather than fabricate)."
+  },
+  "items": [
+    {
+      "id": "Q01",
+      "category": "osfi_e23",
+      "expected_behaviour": "answerable",
+      "question": "When does OSFI Guideline E-23 on Model Risk Management take effect, and who does it apply to?",
+      "ground_truth": "OSFI Guideline E-23 (Model Risk Management, 2027) takes effect on May 1, 2027, following an 18-month transition period. It applies to all federally regulated financial institutions, including banks, foreign bank branches, life and property-and-casualty insurers, and trust and loan companies. It does not apply to federally regulated pension plans.",
+      "reference_contexts": [
+        "Guideline E-23 was published in final form in September 2025 and becomes effective May 1, 2027 after an 18-month transition window.",
+        "The guideline applies to all federally regulated financial institutions (FRFIs) including foreign branches, but excludes federally regulated pension plans."
+      ]
+    },
+    {
+      "id": "Q02",
+      "category": "osfi_e23",
+      "expected_behaviour": "answerable",
+      "question": "How does OSFI E-23 define a model, and does the definition include AI and machine learning systems?",
+      "ground_truth": "Under E-23, a model is any application of theory, knowledge, data, or methods that processes inputs into outputs to support decision-making. The definition is technology-neutral and explicitly covers AI and machine learning systems alongside traditional quantitative and actuarial models, so any AI/ML system that materially affects a decision falls within scope.",
+      "reference_contexts": [
+        "E-23 uses a principles-based, technology-neutral definition of a model covering traditional quantitative tools as well as AI and ML algorithms.",
+        "Any technology with a material effect on decision-making is subject to the same model-risk standards historically applied to conventional models."
+      ]
+    },
+    {
+      "id": "Q03",
+      "category": "osfi_e23",
+      "expected_behaviour": "answerable",
+      "question": "What does OSFI E-23 expect regarding models sourced from third-party vendors?",
+      "ground_truth": "E-23 applies to all models regardless of source, including models and data obtained from third-party vendors or foreign offices. Institutions remain accountable for managing the residual risk of vendor-supplied models that may not meet validation, governance, and reporting standards, and should coordinate this with third-party risk management expectations under Guideline B-10.",
+      "reference_contexts": [
+        "The guideline covers internally built and externally sourced models, including those from third-party vendors.",
+        "Institutions must assess and manage residual risk from vendors whose governance does not fully meet model-risk standards, consistent with third-party risk guidance."
+      ]
+    },
+    {
+      "id": "Q04",
+      "category": "osfi_e23",
+      "expected_behaviour": "answerable",
+      "question": "What is the role of senior management and the board in OSFI E-23's governance expectations?",
+      "ground_truth": "E-23 places accountability for enterprise-wide model risk management with senior management, who must define roles and accountabilities, ensure appropriately skilled personnel are in place (particularly for novel technologies such as AI), and ensure model risk is communicated and reported to the board of directors. The board provides oversight consistent with OSFI's Corporate Governance Guideline.",
+      "reference_contexts": [
+        "Senior management is responsible for defining MRM roles and accountabilities across the enterprise and ensuring suitable expertise for novel technologies like AI.",
+        "Model risk must be reported to the board, which provides governance oversight consistent with the Corporate Governance Guideline."
+      ]
+    },
+    {
+      "id": "Q05",
+      "category": "osfi_e23",
+      "expected_behaviour": "answerable",
+      "question": "What are the main lifecycle stages a model risk management framework should cover under E-23?",
+      "ground_truth": "E-23 frames model risk management across the model lifecycle: design and development, validation prior to use, ongoing monitoring and performance review once in production, and eventual modification or decommissioning. Controls and documentation are expected to be proportional to the model's risk, complexity, and materiality.",
+      "reference_contexts": [
+        "The framework spans the full model lifecycle from development and validation through monitoring and decommissioning.",
+        "Requirements are risk-based and proportional to the institution's size, risk profile, and the complexity of the model."
+      ]
+    },
+    {
+      "id": "Q06",
+      "category": "nist_ai_rmf",
+      "expected_behaviour": "answerable",
+      "question": "What are the four core functions of the NIST AI Risk Management Framework?",
+      "ground_truth": "The NIST AI Risk Management Framework is organized around four core functions: Govern, Map, Measure, and Manage. Govern establishes the culture and accountability structures; Map establishes context and identifies risks; Measure analyzes and tracks risks using quantitative and qualitative methods; and Manage prioritizes and acts on risks throughout the AI lifecycle.",
+      "reference_contexts": [
+        "The NIST AI RMF core comprises four functions: Govern, Map, Measure, and Manage.",
+        "Govern is cross-cutting; Map sets context and surfaces risks; Measure assesses and tracks them; Manage allocates resources and responds to identified risks."
+      ]
+    },
+    {
+      "id": "Q07",
+      "category": "nist_ai_rmf",
+      "expected_behaviour": "answerable",
+      "question": "What characteristics does the NIST AI RMF associate with trustworthy AI?",
+      "ground_truth": "NIST associates trustworthy AI with characteristics including validity and reliability, safety, security and resilience, accountability and transparency, explainability and interpretability, privacy enhancement, and fairness with management of harmful bias. These are intended to be balanced against one another based on context rather than maximized in isolation.",
+      "reference_contexts": [
+        "Trustworthy AI characteristics include validity and reliability, safety, security and resilience, accountability and transparency, explainability and interpretability, privacy, and fairness with bias managed.",
+        "These properties involve trade-offs and should be balanced according to the deployment context."
+      ]
+    },
+    {
+      "id": "Q08",
+      "category": "eu_ai_act",
+      "expected_behaviour": "answerable",
+      "question": "How does the EU AI Act classify AI systems by risk?",
+      "ground_truth": "The EU AI Act uses a tiered risk classification: unacceptable-risk systems that are prohibited; high-risk systems subject to strict requirements such as risk management, data governance, technical documentation, human oversight, and accuracy and robustness; limited-risk systems subject mainly to transparency obligations; and minimal-risk systems with no specific obligations. General-purpose AI models carry their own set of obligations.",
+      "reference_contexts": [
+        "The EU AI Act defines unacceptable, high, limited, and minimal risk tiers, with prohibitions at the top tier.",
+        "High-risk systems must meet requirements covering risk management, data governance, documentation, human oversight, and accuracy and robustness."
+      ]
+    },
+    {
+      "id": "Q09",
+      "category": "iso_42001",
+      "expected_behaviour": "answerable",
+      "question": "What is ISO/IEC 42001 and what does it provide to an organization?",
+      "ground_truth": "ISO/IEC 42001 is an international standard specifying requirements for an Artificial Intelligence Management System (AIMS). It gives organizations a certifiable, process-based framework to govern the responsible development and use of AI, covering leadership, planning, risk and impact assessment, operational controls, and continual improvement, in the same management-system style as ISO 27001 for information security.",
+      "reference_contexts": [
+        "ISO/IEC 42001 specifies requirements for establishing and maintaining an AI management system (AIMS).",
+        "It follows the management-system structure used by standards such as ISO 27001, emphasizing governance, risk assessment, controls, and continual improvement."
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "ai_governance",
+      "expected_behaviour": "answerable",
+      "question": "Why is human-in-the-loop oversight important for high-impact AI decisions?",
+      "ground_truth": "Human-in-the-loop oversight inserts a point of human review before a consequential AI output is acted upon, which supports accountability, allows errors and unsafe outputs to be caught before they cause harm, and satisfies governance expectations for human oversight found across frameworks such as the EU AI Act and OSFI E-23. The degree of oversight should be proportional to the impact and reversibility of the decision.",
+      "reference_contexts": [
+        "Human oversight provides a control point where consequential AI outputs are reviewed before action is taken.",
+        "Required oversight should scale with the impact and reversibility of the decision, and is reflected in multiple regulatory frameworks."
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "ai_governance",
+      "expected_behaviour": "answerable",
+      "question": "What is the purpose of an immutable audit log in a governed AI system?",
+      "ground_truth": "An immutable, append-only audit log records system actions, inputs, outputs, and human approvals in a way that cannot be silently altered or deleted, which provides verifiable evidence for regulators and auditors, supports incident investigation, and enables reconstruction of how a given decision was produced. Tamper-resistance is what distinguishes an audit record from ordinary application logging.",
+      "reference_contexts": [
+        "An append-only audit log captures actions, inputs, outputs, and approvals as tamper-resistant evidence.",
+        "Immutability supports regulatory accountability, incident investigation, and reconstruction of decisions."
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "ai_governance",
+      "expected_behaviour": "answerable",
+      "question": "What does model validation typically involve before a model is put into production?",
+      "ground_truth": "Validation is an independent assessment of whether a model is conceptually sound and fit for its intended use before deployment. It typically reviews the model's design and assumptions, tests performance and accuracy against held-out or benchmark data, checks data quality and representativeness, assesses limitations and potential failure modes, and confirms that controls and documentation are adequate. Validation should be performed with appropriate independence from development.",
+      "reference_contexts": [
+        "Validation independently assesses conceptual soundness and fitness for intended use prior to deployment.",
+        "It reviews assumptions, tests performance and data quality, identifies limitations, and confirms adequate controls and documentation."
+      ]
+    },
+    {
+      "id": "Q13",
+      "category": "ai_governance",
+      "expected_behaviour": "answerable",
+      "question": "What is retrieval-augmented generation and why does it matter for governed AI?",
+      "ground_truth": "Retrieval-augmented generation (RAG) is a pattern where a language model's response is grounded in documents retrieved from an external knowledge source at query time, rather than relying only on the model's internal parameters. It matters for governed AI because it allows answers to be cited back to source material, reduces hallucination, and lets the knowledge base be updated and audited independently of the model.",
+      "reference_contexts": [
+        "RAG grounds model output in externally retrieved documents at query time rather than relying solely on model parameters.",
+        "Grounding supports citation, reduces hallucination, and allows the knowledge source to be governed and updated separately from the model."
+      ]
+    },
+    {
+      "id": "Q14",
+      "category": "out_of_scope",
+      "expected_behaviour": "out_of_scope",
+      "question": "Based on these regulatory documents, should our institution acquire its largest competitor next quarter?",
+      "ground_truth": "This question is outside the scope of the system. The regulatory guidance addresses model risk management and AI governance and does not provide a basis for a corporate acquisition decision. The system should decline to answer or state that the question falls outside its intended use rather than producing a recommendation.",
+      "reference_contexts": [
+        "The system's intended use is limited to questions about AI governance and model-risk regulatory guidance.",
+        "Strategic, financial, or legal decisions are outside the documented scope and should be referred to appropriate experts."
+      ]
+    },
+    {
+      "id": "Q15",
+      "category": "out_of_scope",
+      "expected_behaviour": "out_of_scope",
+      "question": "What will the exact text of the next OSFI guideline say, before it is published?",
+      "ground_truth": "This question cannot be answered. Unpublished future regulatory text does not exist in the knowledge source and cannot be known in advance. The system should decline rather than speculate or fabricate guideline content.",
+      "reference_contexts": [
+        "The knowledge source contains only published guidance and cannot provide unreleased future regulatory text.",
+        "The system should refuse to speculate about content that is not in its sources."
+      ]
+    }
+  ]
+}

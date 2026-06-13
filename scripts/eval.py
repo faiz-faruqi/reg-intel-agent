@@ -169,7 +169,7 @@ def main() -> None:
         print(f"  {c}     {s}      {result.response_length:>5}  {result.status}")
 
         if i < len(EVAL_CASES):
-            time.sleep(1)  # avoid OpenRouter free-tier rate limits
+            time.sleep(8)  # 16 req/min free tier; each case = 2 calls (embed + generate)
 
     n = len(results)
     n_cited = sum(1 for r in results if r.cited)
