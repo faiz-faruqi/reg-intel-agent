@@ -281,6 +281,18 @@ reg-intel-agent/
 
 ---
 
+## Evaluation & Assurance
+
+An independent assurance layer lives in [`evaluation/`](evaluation/). It treats this Agent
+as a system-under-test, scores its outputs with RAGAS (faithfulness, answer
+relevancy, context precision, context recall, refusal correctness), and
+generates an audit-ready Model Risk Assessment mapped to NIST AI RMF and
+OSFI E-23.
+
+See [evaluation/README.md](evaluation/README.md).
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

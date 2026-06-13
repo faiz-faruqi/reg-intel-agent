@@ -1,0 +1,12 @@
+# Mock mode (default) needs only:
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# Live mode (evaluating the real Agent) also needs:
+# RAGAS evolves quickly - this integration targets the 0.2.x API.
+# If you upgrade, re-check src/metrics.py against the new version.
+ragas==0.2.10
+langchain-openai>=0.2.0
+datasets>=2.16.0
+requests>=2.31.0
+pandas>=2.0.0
