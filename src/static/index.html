@@ -817,6 +817,7 @@
                     <div class="load-step" id="ls3"><div class="load-dot"></div>Analysis Agent: drafting cited response</div>
                     <div class="load-step" id="ls4"><div class="load-dot"></div><span id="ls4-label">Checking output guardrails</span></div>
                     <div class="load-step" id="ls5"><div class="load-dot"></div><span id="ls5-label">Writing to audit log</span></div>
+                    <div class="load-step" id="ls7" style="display:none;"><div class="load-dot"></div><span style="color:var(--warning)">Model still generating — Railway Hobby may take 20–30 s on cold start…</span></div>
                     <div class="load-step" id="ls6" style="display:none;"><div class="load-dot"></div>Action Agent: generating proposal</div>
                 </div>
             </div>
@@ -955,11 +956,15 @@
         if (!question) return;
         const top_k = parseInt(document.getElementById('top_k').value);
 
+        document.getElementById('ls7').style.display = 'none';
         const btn = document.getElementById('run-btn');
         btn.disabled = true; btn.textContent = 'Running…';
         showState('loading');
         advance(1);
 
+        const coldStartTimer = setTimeout(() => {
+            document.getElementById('ls7').style.display = 'flex';
+        }, 10000);
         const timers = [
             setTimeout(() => advance(2), 900),
             setTimeout(() => advance(3), 2200),
@@ -975,6 +980,8 @@
             });
 
             timers.forEach(clearTimeout);
+            clearTimeout(coldStartTimer);
+            document.getElementById('ls7').style.display = 'none';
             advance(5);
             await new Promise(r => setTimeout(r, 350));
 
@@ -1023,6 +1030,7 @@
         if (!question) return;
         const top_k = parseInt(document.getElementById('top_k').value);
 
+        document.getElementById('ls7').style.display = 'none';
         const runBtn = document.getElementById('run-btn');
         const propBtn = document.getElementById('propose-btn');
         runBtn.disabled = true; propBtn.disabled = true;
