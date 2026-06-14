@@ -35,12 +35,19 @@ Two-tier strategy:
 - **Demo UI:** `src/static/index.html` — architecture diagram, live query form,
   propose-action demo with live Approve/Reject HITL buttons, email capture
 - **Email capture:** `demo_signups` table in Neon; `/signup` endpoint
-- **Eval harness:** `scripts/eval.py` — 10 fixed compliance questions, scores
+- **Eval harness (simple):** `scripts/eval.py` — 10 fixed compliance questions, scores
   `cited`, `source_hit`, `faithful`; run locally before demos
+- **Assurance framework:** `evaluation/` — RAGAS-based Enterprise AI Assurance Framework;
+  15-item golden dataset; scores faithfulness, answer_relevancy, context_precision,
+  context_recall, refusal_correctness; generates MRA report mapped to NIST AI RMF + OSFI E-23;
+  mock mode (no keys) and live mode (OpenRouter judge); surfaced in UI Assurance section
 - **Demo script:** `docs/demo-script.md` — 3–4 min interview walkthrough
-- **Seed documents:** GDPR, ISO 27001, Basel III, OSFI E-23, OSFI B-20, PIPEDA
-  (6 frameworks, 13 chunks in Neon)
+- **Seed documents:** GDPR, ISO 27001, Basel III, OSFI E-23 (2025 final, eff. May 1 2027),
+  OSFI B-20, PIPEDA, NIST AI RMF, EU AI Act, ISO/IEC 42001, AI Governance Principles
+  (10 frameworks, 15 chunks in Neon)
 - **CI:** GitHub Actions — ruff lint + pytest (23 tests, all mocked, no DB/API in CI)
+- **Demo UI aesthetic:** editorial paper/ink design — DM Serif Display, DM Mono, Instrument
+  Sans; warm paper (#faf9f6) background; matches portfolio.html design system
 - **Custom domain:** `reg-intel.demo.cloudkraft.com` → Railway via Bluehost DNS CNAME
 
 ### API paths
