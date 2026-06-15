@@ -171,30 +171,6 @@
         .pipe-step.gate .pipe-name { color: var(--amber); }
         .pipe-desc { font-size: 12px; color: var(--ink-3); line-height: 1.55; }
 
-        /* ── Step cards ── */
-        .steps-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1px; background: var(--rule);
-            border: 1px solid var(--rule); border-radius: 8px; overflow: hidden;
-        }
-        .step-card {
-            background: var(--surface); padding: 24px;
-            display: flex; gap: 16px; align-items: flex-start;
-        }
-        .step-num {
-            width: 24px; height: 24px; flex-shrink: 0;
-            background: var(--navy-light); border: 1px solid rgba(29,78,137,0.2);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 700; color: var(--navy);
-        }
-        .step-title { font-weight: 600; font-size: 13px; margin-bottom: 6px; color: var(--ink); }
-        .step-body { font-size: 12px; color: var(--ink-3); line-height: 1.6; }
-        .step-body code {
-            background: var(--rule-light); padding: 0.1rem 0.35rem;
-            border-radius: 3px; font-family: 'DM Mono', monospace;
-            font-size: 11px; color: var(--navy);
-        }
-
         /* ── Governance ── */
         .gov-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -546,85 +522,6 @@
         </div>
     </div>
 
-    <div style="margin-top:36px;">
-        <div class="sec-label">Under the Hood</div>
-        <h2>Step-by-Step Execution</h2>
-        <p class="sec-sub">What the code actually does when a question arrives at the API.</p>
-        <div class="steps-grid">
-            <div class="step-card">
-                <div class="step-num">1</div>
-                <div>
-                    <div class="step-title">Supervisor routes the question</div>
-                    <div class="step-body">
-                        A LangGraph <code>StateGraph</code> with a supervisor node checks state on each
-                        transition and routes: knowledge → analysis → (action in CLI mode).
-                        Uses <code>AgentState(TypedDict, total=False)</code> so partial returns
-                        merge safely without overwriting existing state keys.
-                    </div>
-                </div>
-            </div>
-            <div class="step-card">
-                <div class="step-num">2</div>
-                <div>
-                    <div class="step-title">pgvector semantic retrieval</div>
-                    <div class="step-body">
-                        The question is embedded with <code>text-embedding-3-small</code> (1536-dim).
-                        An HNSW index on the <code>documents</code> table returns top-k chunks
-                        by cosine similarity. HNSW works at any dataset size — unlike IVFFlat,
-                        which requires hundreds of rows to be useful.
-                    </div>
-                </div>
-            </div>
-            <div class="step-card">
-                <div class="step-num">3</div>
-                <div>
-                    <div class="step-title">Citation-mandatory drafting</div>
-                    <div class="step-body">
-                        Analysis Agent receives retrieved chunks and is prompted: every factual claim
-                        must reference a <code>[N]</code> citation. The response is checked for
-                        <code>is_cited=True</code> before emission — hallucination is structurally
-                        constrained, not just prompted against.
-                    </div>
-                </div>
-            </div>
-            <div class="step-card">
-                <div class="step-num">4</div>
-                <div>
-                    <div class="step-title">Output guardrail</div>
-                    <div class="step-body">
-                        The draft is screened for PII patterns (SSN regex, credit card regex,
-                        email) and harmful content before being returned to the caller.
-                        API-compatible with AWS Bedrock Guardrails — swapping to managed
-                        guardrails in production is a config change, not a rewrite.
-                    </div>
-                </div>
-            </div>
-            <div class="step-card">
-                <div class="step-num">5</div>
-                <div>
-                    <div class="step-title">Action proposal + HITL gate (CLI mode)</div>
-                    <div class="step-body">
-                        Action Agent generates a JSON proposal <code>{title, body, labels}</code>
-                        for a Jira ticket or GitHub issue. LangGraph's <code>interrupt_before=["human_gate"]</code>
-                        pauses the graph. The CLI prompts for <code>approve/reject</code>, then calls
-                        <code>graph.update_state()</code> and resumes — no write without human intent.
-                    </div>
-                </div>
-            </div>
-            <div class="step-card">
-                <div class="step-num">6</div>
-                <div>
-                    <div class="step-title">Append-only audit trail</div>
-                    <div class="step-body">
-                        Every agent step and human decision is written to the <code>audit_log</code>
-                        table in Neon PostgreSQL with a UTC timestamp. A <code>BEFORE DELETE</code>
-                        and <code>BEFORE UPDATE</code> trigger raises an exception on any
-                        modification attempt — immutability enforced at the DB level.
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- ── Governance ──────────────────────────────────────────────────────────── -->
