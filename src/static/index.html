@@ -476,7 +476,7 @@
 
 <!-- ── Hero ─────────────────────────────────────────────────────────────────── -->
 <div class="hero">
-    <div class="sec-tag">CloudKraft Consulting — Reference Implementation</div>
+    <div class="sec-tag">CloudKraft Consulting</div>
     <h1>A governed multi-agent system<br>for <em>regulated industries</em></h1>
     <p class="hero-sub">
         Answers compliance questions by retrieving grounded regulatory context,
@@ -743,20 +743,20 @@
     <div class="sec-label">Infrastructure</div>
     <h2>Two-Tier Deployment Strategy</h2>
     <p class="sec-sub">
-        Deliberately cost-optimised for demo portability at ~CAD $20–35/month.
+        Live on Railway with Neon PostgreSQL at ~CAD $20–35/month.
         The production path is fully designed in ADRs — moving to AWS changes
         infrastructure, not application code.
     </p>
     <div class="infra-grid">
         <div class="infra-card">
-            <div class="infra-env demo">● Demo Tier — Active Now</div>
+            <div class="infra-env demo">● Current Tier</div>
             <ul class="infra-items">
-                <li>Railway Hobby (FastAPI API)</li>
-                <li>Neon free tier (pgvector)</li>
+                <li>Railway (FastAPI API)</li>
+                <li>Neon PostgreSQL + pgvector</li>
                 <li>OpenRouter → Claude Sonnet</li>
                 <li>LangSmith tracing</li>
                 <li>~CAD $20–35/month total</li>
-                <li>Sleeps after 30 min idle</li>
+                <li>Auto-scales to zero on idle</li>
             </ul>
         </div>
         <div class="infra-card">
@@ -842,7 +842,7 @@
                     <div class="load-step" id="ls3"><div class="load-dot"></div>Analysis Agent: drafting cited response</div>
                     <div class="load-step" id="ls4"><div class="load-dot"></div><span id="ls4-label">Checking output guardrails</span></div>
                     <div class="load-step" id="ls5"><div class="load-dot"></div><span id="ls5-label">Writing to audit log</span></div>
-                    <div class="load-step" id="ls7" style="display:none;"><div class="load-dot"></div><span style="color:var(--warning)">Model still generating — Railway Hobby may take 20–30 s on cold start…</span></div>
+                    <div class="load-step" id="ls7" style="display:none;"><div class="load-dot"></div><span style="color:var(--warning)">Model still generating — first request may take 20–30 s, subsequent queries are fast…</span></div>
                     <div class="load-step" id="ls6" style="display:none;"><div class="load-dot"></div>Action Agent: generating proposal</div>
                 </div>
             </div>
@@ -914,8 +914,7 @@
 <!-- ── Footer ─────────────────────────────────────────────────────────────── -->
 <div class="footer-block">
     <p class="footer-copy">
-        Regulatory Intelligence Agent &middot; Reference implementation by <strong>Faiz Faruqi</strong>
-        &middot; Not a production deployment at any named client.
+        Regulatory Intelligence Agent &middot; Built by <strong>Faiz Faruqi</strong> &middot; CloudKraft Consulting
     </p>
     <div class="footer-links">
         <a href="https://faizfaruqi.com" target="_blank">faizfaruqi.com</a>
