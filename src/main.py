@@ -239,6 +239,62 @@ async def signup(request: Request, body: SignupRequest) -> dict[str, str]:
     return {"status": "ok", "message": "Thanks — you're on the list."}
 
 
+_EVAL_CASES = [
+    {"question": "What are the GDPR data minimisation requirements?",            "expected": ["GDPR"]},
+    {"question": "What are the Basel III minimum capital adequacy requirements?", "expected": ["Basel"]},
+    {"question": "What does OSFI E-23 require for model validation?",            "expected": ["E-23"]},
+    {"question": "What are the PIPEDA consent requirements for personal data?",  "expected": ["PIPEDA"]},
+]
+
+
+@app.post("/eval", tags=["evaluation"])
+@limiter.limit("1/minute;2/day")
+async def run_eval(request: Request) -> dict:
+    """
+    Run 4 representative compliance questions through the live agent pipeline and score
+    faithfulness (cited AND correct source). Results are generated in real time.
+    Rate limited: 1/minute, 2/day per IP.
+    """
+    import asyncio
+    from src.graph import graph
+
+    def _invoke(question: str, expected: list[str]) -> dict:
+        state: dict = {
+            "question": question, "top_k": 5,
+            "retrieved_chunks": [], "draft_response": "",
+            "citations": [], "is_cited": False, "next": "",
+        }
+        try:
+            result = graph.invoke(state)
+            cited = result.get("is_cited", False)
+            citations = result.get("citations", [])
+            source_hit = any(kw.lower() in " ".join(citations).lower() for kw in expected)
+            status = "PASS" if (cited and source_hit) else ("WRONG_SRC" if cited else "FAIL")
+            return {"question": question, "cited": cited, "source_hit": source_hit,
+                    "status": status, "citations": citations[:3], "error": None}
+        except Exception as exc:
+            return {"question": question, "cited": False, "source_hit": False,
+                    "status": "ERROR", "citations": [], "error": str(exc)[:120]}
+
+    loop = asyncio.get_event_loop()
+    cases_out = []
+    for case in _EVAL_CASES:
+        result = await loop.run_in_executor(None, _invoke, case["question"], case["expected"])
+        cases_out.append(result)
+
+    n = len(cases_out)
+    n_pass = sum(1 for r in cases_out if r["status"] == "PASS")
+    return {
+        "cases": cases_out,
+        "summary": {
+            "total": n,
+            "passed": n_pass,
+            "cited": sum(1 for r in cases_out if r["cited"]),
+            "faithful_pct": round(n_pass / n, 3) if n else 0,
+        },
+    }
+
+
 class SignupRequest(BaseModel):
     email: str
 

@@ -762,7 +762,7 @@
                   <span class="adr-fl">Decision</span>
                   <span class="adr-fv">Co-locate the vector store in the same Neon PostgreSQL instance as the audit log. Single connection string, zero incremental cost at demo scale.</span>
                   <span class="adr-fl">Context</span>
-                  <span class="adr-fv">15 chunks, ~2 QPS. A dedicated Pinecone cluster adds $70+/month with no latency benefit. Neon free tier handles this comfortably.</span>
+                  <span class="adr-fv">15 chunks, ~2 QPS. A dedicated Pinecone cluster adds $70+/month with no latency benefit. Neon handles this comfortably at zero incremental cost.</span>
                   <span class="adr-fl">Trade-off</span>
                   <span class="adr-fv">Migration trigger: corpus exceeds ~1M chunks, QPS &gt; 50, or SLA requires sub-10ms P99. Then: Aurora Serverless v2 + pgvector or OpenSearch Serverless.</span>
                 </div>
@@ -816,7 +816,7 @@
                   <span class="adr-fl">Decision</span>
                   <span class="adr-fv">Use OpenRouter with google/gemma-4-31b-it:free for generation and text-embedding-3-small for embeddings. Production swaps to Bedrock — no application code changes.</span>
                   <span class="adr-fl">Context</span>
-                  <span class="adr-fv">Free-tier generation = $0 at demo volume. Same ChatOpenAI client class works with a different base_url — OpenAI SDK compatibility is the critical design choice.</span>
+                  <span class="adr-fv">Generation cost = $0 at demo volume. Same ChatOpenAI client class works with a different base_url — OpenAI SDK compatibility is the critical design choice.</span>
                   <span class="adr-fl">Trade-off</span>
                   <span class="adr-fv">Bedrock requires AWS account, 1024-dim embeddings (rebuild HNSW index), and IAM role assignment. Data stays in-region and OSFI E-23 MDS compliance is cleaner.</span>
                 </div>
@@ -916,14 +916,59 @@
 
           </div><!-- /ass-layout -->
 
+          <!-- Live eval harness -->
           <div style="margin-top:28px;padding-top:20px;border-top:.5px solid var(--border);">
-            <div class="sec-h" style="font-size:15px;margin-bottom:8px;">Run the evaluation harness</div>
-            <p style="font-size:13px;color:var(--muted);line-height:1.65;max-width:540px;">
-              The full RAGAS pipeline is in <code style="font-family:'DM Mono',monospace;background:var(--sidebar);padding:2px 6px;border-radius:4px;font-size:12px;">evaluation/run_assurance.py</code>.
-              Run in mock mode (no API keys required) or live mode against the deployed system.
-              Generates the MRA report with NIST AI RMF and OSFI E-23 control status.
-              See <a href="https://github.com/faiz-faruqi/reg-intel-agent/tree/main/evaluation" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:.5px solid rgba(29,78,137,.3);">evaluation/ on GitHub →</a>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+              <div class="sec-h" style="font-size:15px;">Live evaluation harness</div>
+              <button class="btn btn-ghost" id="eval-run-btn" onclick="runEval()" style="font-size:10px;">
+                Run 4 questions now →
+              </button>
+            </div>
+            <p style="font-size:13px;color:var(--muted);line-height:1.65;max-width:540px;margin-bottom:16px;">
+              Runs 4 representative compliance questions through the live agent pipeline and scores
+              each for <em>cited</em> (citations present) and <em>source_hit</em> (correct regulatory
+              document cited). Results are generated in real time — not pre-computed.
             </p>
+
+            <!-- Loading -->
+            <div id="eval-loading" style="display:none;padding:12px 0 4px;">
+              <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:10px;letter-spacing:.04em;">RUNNING EVAL PIPELINE…</div>
+              <div style="display:flex;flex-direction:column;gap:6px;" id="eval-progress">
+                <div class="ld-step" id="ep1"><div class="ld-dot"></div>GDPR — data minimisation requirements</div>
+                <div class="ld-step" id="ep2"><div class="ld-dot"></div>Basel III — minimum capital adequacy</div>
+                <div class="ld-step" id="ep3"><div class="ld-dot"></div>OSFI E-23 — model validation</div>
+                <div class="ld-step" id="ep4"><div class="ld-dot"></div>PIPEDA — consent requirements</div>
+              </div>
+            </div>
+
+            <!-- Results -->
+            <div id="eval-results" style="display:none;">
+              <div style="background:var(--surface);border:.5px solid var(--border);border-radius:8px;overflow:hidden;">
+                <div style="padding:10px 14px;border-bottom:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.09em;color:var(--hint);">Live run results</span>
+                  <span id="eval-summary-chip" class="chip"></span>
+                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:12px;" id="eval-table">
+                  <thead>
+                    <tr>
+                      <th style="padding:8px 12px;text-align:left;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--hint);border-bottom:.5px solid var(--border);">Question</th>
+                      <th style="padding:8px 12px;text-align:center;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--hint);border-bottom:.5px solid var(--border);">Cited</th>
+                      <th style="padding:8px 12px;text-align:center;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--hint);border-bottom:.5px solid var(--border);">Source hit</th>
+                      <th style="padding:8px 12px;text-align:left;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--hint);border-bottom:.5px solid var(--border);">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="eval-tbody"></tbody>
+                </table>
+              </div>
+              <p style="margin-top:10px;font-size:12px;color:var(--hint);">
+                Full RAGAS pipeline (15 questions, faithfulness + context precision + recall):
+                <a href="https://github.com/faiz-faruqi/reg-intel-agent/tree/main/evaluation" target="_blank"
+                   style="color:var(--navy);text-decoration:none;border-bottom:.5px solid rgba(29,78,137,.3);">evaluation/ on GitHub →</a>
+              </p>
+            </div>
+
+            <!-- Error -->
+            <div id="eval-error" style="display:none;margin-top:12px;"></div>
           </div>
 
         </div>
@@ -1224,6 +1269,65 @@ async function rejectAction() {
   document.getElementById('hitl-actions').style.display = 'none';
   document.getElementById('hitl-badge').textContent = 'changes requested';
   currentProposal = null;
+}
+
+// ── Eval harness ─────────────────────────────────────────────────────
+async function runEval() {
+  const btn = document.getElementById('eval-run-btn');
+  btn.disabled = true; btn.textContent = 'Running…';
+  document.getElementById('eval-loading').style.display = '';
+  document.getElementById('eval-results').style.display = 'none';
+  document.getElementById('eval-error').style.display = 'none';
+
+  // animate steps sequentially while waiting
+  const steps = ['ep1','ep2','ep3','ep4'];
+  steps.forEach(id => document.getElementById(id).className = 'ld-step');
+  document.getElementById('ep1').className = 'ld-step active';
+
+  // stagger optimistic step animations (rough timing: ~25s per question)
+  const stepTimers = [
+    setTimeout(() => { document.getElementById('ep1').className='ld-step done'; document.getElementById('ep2').className='ld-step active'; }, 25000),
+    setTimeout(() => { document.getElementById('ep2').className='ld-step done'; document.getElementById('ep3').className='ld-step active'; }, 50000),
+    setTimeout(() => { document.getElementById('ep3').className='ld-step done'; document.getElementById('ep4').className='ld-step active'; }, 75000),
+  ];
+
+  try {
+    const res = await fetch('/eval', { method: 'POST', headers: {'Content-Type':'application/json'} });
+    stepTimers.forEach(clearTimeout);
+    steps.forEach(id => document.getElementById(id).className = 'ld-step done');
+    document.getElementById('eval-loading').style.display = 'none';
+
+    if (!res.ok) { const e = await res.json().catch(()=>({detail:'Unknown error'})); throw new Error(e.detail || `HTTP ${res.status}`); }
+    const data = await res.json();
+
+    // summary chip
+    const s = data.summary;
+    const chip = document.getElementById('eval-summary-chip');
+    chip.textContent = s.passed + '/' + s.total + ' faithful';
+    chip.className = 'chip ' + (s.passed === s.total ? 'ok' : '');
+
+    // table rows
+    document.getElementById('eval-tbody').innerHTML = data.cases.map(c => {
+      const statusMap = { PASS:'ctl-pass', FAIL:'ctl-attn', WRONG_SRC:'ctl-attn', ERROR:'ctl-attn' };
+      const q = c.question.length > 55 ? c.question.slice(0,55)+'…' : c.question;
+      return `<tr>
+        <td style="padding:8px 12px;border-bottom:.5px solid var(--border);color:var(--ink);">${q}</td>
+        <td style="padding:8px 12px;border-bottom:.5px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-size:12px;" class="${c.cited?'':''}"> ${c.cited ? '<span style="color:var(--ok);">✓</span>' : '<span style="color:var(--danger);">✗</span>'}</td>
+        <td style="padding:8px 12px;border-bottom:.5px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-size:12px;">${c.source_hit ? '<span style="color:var(--ok);">✓</span>' : '<span style="color:var(--danger);">✗</span>'}</td>
+        <td style="padding:8px 12px;border-bottom:.5px solid var(--border);"><span class="ctl-badge ${statusMap[c.status]||'ctl-attn'}">${c.status}</span></td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('eval-results').style.display = '';
+  } catch(err) {
+    stepTimers.forEach(clearTimeout);
+    document.getElementById('eval-loading').style.display = 'none';
+    const el = document.getElementById('eval-error');
+    el.innerHTML = `<div class="err-box">Eval failed: ${err.message}</div>`;
+    el.style.display = '';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Run 4 questions now →';
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────
