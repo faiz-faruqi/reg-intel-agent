@@ -1,1092 +1,1239 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Regulatory Intelligence Agent — CloudKraft</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RegIntel — CloudKraft</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ── Tokens ─────────────────────────────────────────────────────── */
+    :root {
+      --paper:        #faf9f6;
+      --sidebar:      #f4f1e9;
+      --hover-bg:     #ece9e1;
+      --navy:         #1d4e89;
+      --navy-hover:   #16397a;
+      --ink:          #2b323d;
+      --muted:        #5a6273;
+      --hint:         #a39b89;
+      --border:       #e3ded2;
+      --surface:      #ffffff;
+      --info-bg:      #e7eef7;
+      --info-border:  #cfe0f2;
+      --info-text:    #0c447c;
+      --gate-bg:      #fdf4e4;
+      --gate-border:  #ecd09a;
+      --gate-text:    #633806;
+      --ok:           #1d9e75;
+      --ok-bg:        #e6f7f2;
+      --ok-border:    rgba(29,158,117,.25);
+      --danger:       #993c1d;
+      --danger-bg:    #faece7;
+      --danger-border:rgba(153,60,29,.25);
+      --warn:         #d97706;
+    }
 
-        :root {
-            --ink:          #1a1814;
-            --ink-2:        #3d3a34;
-            --ink-3:        #6b6760;
-            --ink-4:        #9c9890;
-            --rule:         #dedad2;
-            --rule-light:   #edeae4;
-            --paper:        #faf9f6;
-            --sidebar-bg:   #f3f1eb;
-            --navy:         #1d4e89;
-            --navy-mid:     #2e6ab4;
-            --navy-light:   #e8f0f9;
-            --teal:         #0f6e56;
-            --teal-light:   #e1f5ee;
-            --amber:        #854f0b;
-            --amber-light:  #faeeda;
-            --coral:        #993c1d;
-            --coral-light:  #faece7;
+    /* ── Reset ──────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Instrument Sans', sans-serif;
+      background: var(--paper); color: var(--ink);
+      font-size: 14px; line-height: 1.6;
+    }
+    a { color: inherit; }
+    button { font-family: inherit; }
 
-            /* compat aliases — used by JS inline styles */
-            --bg:           var(--paper);
-            --surface:      #ffffff;
-            --surface2:     #f3f1eb;
-            --border:       var(--rule);
-            --accent:       var(--navy);
-            --accent-glow:  var(--navy-light);
-            --success:      var(--teal);
-            --warning:      var(--amber);
-            --danger:       var(--coral);
-            --text:         var(--ink);
-            --muted:        var(--ink-3);
-            --code-bg:      var(--rule-light);
+    /* ── Shell ──────────────────────────────────────────────────────── */
+    .shell { display: flex; height: 100vh; overflow: hidden; }
 
-            --sidebar-w:    220px;
-        }
+    /* ── Sidebar ────────────────────────────────────────────────────── */
+    .sidebar {
+      width: 172px; flex-shrink: 0;
+      background: var(--sidebar);
+      border-right: .5px solid var(--border);
+      display: flex; flex-direction: column;
+      height: 100vh; overflow: hidden;
+    }
+    .sb-brand {
+      display: flex; align-items: center; gap: 10px;
+      padding: 18px 14px 16px;
+      border-bottom: .5px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sb-avatar {
+      width: 32px; height: 32px; flex-shrink: 0;
+      background: var(--navy); color: var(--paper);
+      border-radius: 7px; font-family: 'DM Serif Display', serif;
+      font-size: 17px; display: flex; align-items: center; justify-content: center;
+    }
+    .sb-name { font-weight: 600; font-size: 13px; color: var(--ink); line-height: 1.2; }
+    .sb-org  { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: .03em; }
 
-        html, body { height: 100%; overflow: hidden; }
+    .sb-section-label {
+      padding: 16px 14px 8px;
+      font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: .12em; color: var(--hint);
+    }
+    .sb-nav { display: flex; flex-direction: column; gap: 1px; padding: 0 8px; }
+    .sb-item {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; padding: 8px 10px; border-radius: 6px;
+      font-size: 13px; color: var(--muted);
+      text-align: left; border: none; background: transparent; cursor: pointer;
+      transition: background .12s, color .12s;
+    }
+    .sb-item:hover  { background: var(--hover-bg); color: var(--ink); }
+    .sb-item.active { background: var(--navy); color: var(--paper); font-weight: 500; }
+    .sb-item-count {
+      margin-left: auto;
+      font-family: 'DM Mono', monospace; font-size: 10px;
+      background: rgba(90,98,115,.12); border-radius: 3px;
+      padding: 1px 5px; color: var(--muted);
+    }
+    .sb-item.active .sb-item-count { background: rgba(255,255,255,.2); color: rgba(250,249,246,.7); }
 
-        body {
-            font-family: 'Instrument Sans', sans-serif;
-            background: var(--paper);
-            color: var(--ink);
-            font-size: 16px;
-            line-height: 1.7;
-        }
+    .sb-spacer { flex: 1; }
+    .sb-footer {
+      padding: 14px; border-top: .5px solid var(--border); flex-shrink: 0;
+    }
+    .sb-status-row {
+      display: flex; align-items: center; gap: 6px; margin-bottom: 7px;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--hint); flex-shrink: 0; transition: background .3s; }
+    .status-dot.ok      { background: var(--ok); }
+    .status-dot.down    { background: var(--danger); }
+    .status-dot.checking{ background: var(--hint); animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .sb-status-label { font-size: 12px; font-weight: 500; color: var(--ink); }
+    .sb-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: .02em; line-height: 1.8; }
 
-        /* ── App shell ── */
-        .app-shell {
-            display: flex;
-            height: 100vh;
-        }
+    /* ── Main ───────────────────────────────────────────────────────── */
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-        /* ── Sidebar ── */
-        .sidebar {
-            width: var(--sidebar-w);
-            flex-shrink: 0;
-            background: var(--sidebar-bg);
-            border-right: 1px solid var(--rule);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow-y: auto;
-            position: fixed;
-            left: 0; top: 0;
-        }
-        .sidebar-brand {
-            display: flex; align-items: center; gap: 8px;
-            padding: 20px 18px 16px;
-            border-bottom: 1px solid var(--rule);
-        }
-        .live-dot {
-            width: 7px; height: 7px; flex-shrink: 0;
-            background: var(--teal); border-radius: 50%;
-            animation: blink 2s ease-in-out infinite;
-        }
-        .live-dot.checking { background: var(--amber); }
-        .live-dot.down     { background: var(--coral); animation: none; }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        .sidebar-brand-text {
-            font-family: 'DM Mono', monospace;
-            font-size: 11px; font-weight: 500;
-            letter-spacing: 0.07em; text-transform: uppercase;
-            color: var(--ink-2); line-height: 1.4;
-        }
+    /* ── Panels ─────────────────────────────────────────────────────── */
+    .panel { display: none; flex: 1; flex-direction: column; height: 100%; overflow: hidden; }
+    .panel.active { display: flex; }
 
-        .sidebar-section { padding: 20px 0 0; }
-        .sidebar-section-label {
-            font-family: 'DM Mono', monospace;
-            font-size: 9px; font-weight: 500;
-            text-transform: uppercase; letter-spacing: 0.12em;
-            color: var(--ink-4); padding: 0 18px 8px;
-        }
-        .sidebar-nav { display: flex; flex-direction: column; }
-        .nav-item {
-            display: flex; align-items: center; gap: 8px;
-            padding: 8px 18px;
-            font-family: 'DM Mono', monospace;
-            font-size: 11px; letter-spacing: 0.05em;
-            color: var(--ink-3); text-decoration: none;
-            border-left: 2px solid transparent;
-            transition: all 0.15s; cursor: pointer;
-        }
-        .nav-item:hover { color: var(--navy); background: rgba(29,78,137,0.05); }
-        .nav-item.active { color: var(--navy); border-left-color: var(--navy); background: var(--navy-light); font-weight: 500; }
-        .nav-item.ext { color: var(--ink-4); }
-        .nav-item.ext:hover { color: var(--navy-mid); background: transparent; }
+    /* ── Panel header ───────────────────────────────────────────────── */
+    .ph {
+      padding: 13px 24px; border-bottom: .5px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; background: var(--paper);
+    }
+    .ph-title { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--ink); letter-spacing: -.01em; }
+    .ph-chips { display: flex; gap: 6px; align-items: center; }
+    .chip {
+      font-family: 'DM Mono', monospace; font-size: 10px;
+      padding: 3px 8px; border-radius: 4px;
+      border: .5px solid var(--border); background: var(--sidebar);
+      color: var(--muted); letter-spacing: .04em; white-space: nowrap;
+    }
+    .chip.run { background: var(--info-bg); border-color: var(--info-border); color: var(--info-text); font-weight: 500; }
+    .chip.ok  { background: var(--ok-bg); border-color: var(--ok-border); color: var(--ok); }
 
-        .sidebar-divider { height: 1px; background: var(--rule); margin: 16px 18px; }
-        .sidebar-spacer { flex: 1; }
-        .sidebar-footer {
-            padding: 16px 18px 20px;
-            border-top: 1px solid var(--rule);
-            display: flex; flex-direction: column; gap: 6px;
-        }
-        .sidebar-footer a {
-            font-family: 'DM Mono', monospace;
-            font-size: 10px; letter-spacing: 0.05em;
-            color: var(--ink-4); text-decoration: none; transition: color 0.15s;
-        }
-        .sidebar-footer a:hover { color: var(--navy-mid); }
+    .panel-scroll { flex: 1; overflow-y: auto; }
+    .panel-body   { max-width: 860px; padding: 28px 28px 72px; }
 
-        /* ── Main panel ── */
-        .main-panel {
-            margin-left: var(--sidebar-w);
-            flex: 1;
-            display: flex; flex-direction: column;
-            height: 100vh; overflow: hidden;
-        }
+    /* ── Common typography ──────────────────────────────────────────── */
+    .sec-h { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--ink); letter-spacing: -.015em; margin-bottom: 6px; }
+    .sec-p { font-size: 13px; color: var(--muted); line-height: 1.65; margin-bottom: 22px; max-width: 540px; }
+    .sec-label { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--hint); }
 
-        /* ── Status bar ── */
-        .status-bar {
-            height: 40px; flex-shrink: 0;
-            background: var(--sidebar-bg);
-            border-bottom: 1px solid var(--rule);
-            display: flex; align-items: center;
-            justify-content: space-between;
-            padding: 0 40px;
-        }
-        .status-indicators { display: flex; align-items: center; gap: 20px; }
-        .status-item {
-            display: flex; align-items: center; gap: 6px;
-            font-family: 'DM Mono', monospace;
-            font-size: 10px; letter-spacing: 0.06em;
-            text-transform: uppercase; color: var(--ink-4);
-        }
-        .s-dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: var(--rule); transition: background 0.4s;
-            flex-shrink: 0;
-        }
-        .s-dot.ok      { background: var(--teal); }
-        .s-dot.checking{ background: var(--amber); animation: blink 1.2s ease-in-out infinite; }
-        .s-dot.down    { background: var(--coral); }
-        .status-meta {
-            font-family: 'DM Mono', monospace;
-            font-size: 10px; color: var(--ink-4); letter-spacing: 0.04em;
-        }
+    /* ── Buttons ────────────────────────────────────────────────────── */
+    .btn {
+      padding: 8px 16px; border-radius: 7px; cursor: pointer;
+      font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+      letter-spacing: .05em; text-transform: uppercase; transition: all .13s;
+      border: none; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary { background: var(--navy); color: var(--paper); }
+    .btn-primary:hover { opacity: .87; }
+    .btn-primary:disabled { opacity: .38; cursor: not-allowed; }
+    .btn-ghost { background: var(--surface); border: .5px solid var(--border); color: var(--muted); }
+    .btn-ghost:hover { border-color: var(--navy); color: var(--navy); background: var(--info-bg); }
+    .btn-ghost:disabled { opacity: .38; cursor: not-allowed; }
+    .btn-approve { background: var(--navy); color: var(--paper); font-family: 'Instrument Sans', sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; padding: 8px 18px; border-radius: 7px; border: none; cursor: pointer; transition: opacity .13s; }
+    .btn-approve:hover { opacity: .87; }
+    .btn-approve:disabled { opacity: .38; cursor: not-allowed; }
+    .btn-reject { background: var(--surface); border: .5px solid rgba(237,208,154,.9); color: var(--gate-text); font-family: 'Instrument Sans', sans-serif; font-size: 13px; font-weight: 400; padding: 8px 18px; border-radius: 7px; cursor: pointer; transition: background .13s; }
+    .btn-reject:hover { background: rgba(255,255,255,.7); }
+    .btn-reject:disabled { opacity: .38; cursor: not-allowed; }
+    .link-reset { background: none; border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--hint); letter-spacing: .04em; transition: color .12s; padding: 0; }
+    .link-reset:hover { color: var(--navy); }
 
-        /* ── Scrollable content ── */
-        .main-content {
-            flex: 1; overflow-y: auto;
-            scroll-behavior: smooth;
-        }
-        .content-wrap {
-            max-width: 860px;
-            padding: 0 40px 80px;
-        }
+    /* ═══════════════════════════════════════════════════════════════════
+       AGENT PANEL
+    ═══════════════════════════════════════════════════════════════════ */
 
-        /* ── Section blocks ── */
-        .section-block { padding: 52px 0; border-top: 1px solid var(--rule); }
+    /* Input state */
+    .agent-input { flex: 1; overflow-y: auto; }
+    .agent-input-body { max-width: 600px; padding: 40px 28px 72px; }
+    .ai-greeting { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--ink); margin-bottom: 8px; letter-spacing: -.015em; }
+    .ai-sub { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 28px; max-width: 460px; }
 
-        .sec-label {
-            font-family: 'DM Mono', monospace;
-            font-size: 10px; font-weight: 500; letter-spacing: 0.14em;
-            text-transform: uppercase; color: var(--navy-mid); margin-bottom: 6px;
-        }
-        h2 {
-            font-family: 'DM Serif Display', serif;
-            font-size: clamp(20px, 2.8vw, 28px);
-            line-height: 1.15; letter-spacing: -0.02em;
-            color: var(--ink); margin-bottom: 10px;
-        }
-        .sec-sub {
-            font-size: 14px; line-height: 1.75; color: var(--ink-3);
-            max-width: 580px; margin-bottom: 28px;
-        }
+    .q-box {
+      border: .5px solid var(--border); border-radius: 8px;
+      background: var(--surface); box-shadow: 0 1px 4px rgba(43,50,61,.04);
+      overflow: hidden;
+    }
+    .q-textarea {
+      width: 100%; padding: 14px 16px;
+      font-family: 'Instrument Sans', sans-serif; font-size: 14px; color: var(--ink);
+      background: transparent; border: none; outline: none;
+      resize: none; min-height: 80px; line-height: 1.6;
+    }
+    .q-textarea::placeholder { color: var(--hint); }
+    .q-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; border-top: .5px solid var(--border);
+      background: var(--sidebar);
+    }
+    .q-bar-left { display: flex; align-items: center; gap: 8px; }
+    .topk-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: .04em; }
+    .topk-in {
+      width: 38px; padding: 3px 7px; border: .5px solid var(--border);
+      border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 11px;
+      color: var(--ink); background: var(--paper); text-align: center;
+    }
+    .q-btns { display: flex; gap: 6px; }
 
-        /* ── Hero ── */
-        .hero { padding: 52px 0 44px; }
-        .sec-tag {
-            font-family: 'DM Mono', monospace;
-            font-size: 10px; font-weight: 500; letter-spacing: 0.12em;
-            text-transform: uppercase; color: var(--navy-mid);
-            display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
-        }
-        .sec-tag::before { content: ''; display: block; width: 20px; height: 1px; background: var(--navy-mid); }
-        h1 {
-            font-family: 'DM Serif Display', serif;
-            font-size: clamp(28px, 3.5vw, 40px);
-            line-height: 1.1; letter-spacing: -0.025em;
-            color: var(--ink); margin-bottom: 18px;
-        }
-        h1 em { font-style: italic; color: var(--navy); }
-        .hero-sub {
-            font-size: 15px; line-height: 1.8; color: var(--ink-2);
-            max-width: 560px; margin-bottom: 32px;
-        }
+    .examples { margin-top: 22px; }
+    .ex-label { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: var(--hint); margin-bottom: 8px; }
+    .ex-list  { display: flex; flex-direction: column; gap: 5px; }
+    .ex-item  {
+      width: 100%; padding: 8px 12px;
+      background: var(--sidebar); border: .5px solid var(--border); border-radius: 6px;
+      font-size: 12px; color: var(--muted); text-align: left; cursor: pointer;
+      transition: all .12s; font-family: 'Instrument Sans', sans-serif;
+    }
+    .ex-item:hover { border-color: var(--info-border); background: var(--info-bg); color: var(--info-text); }
 
-        /* ── Stat cards ── */
-        .stat-cards {
-            display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 1px; background: var(--rule);
-            border: 1px solid var(--rule); border-radius: 8px; overflow: hidden;
-            margin-bottom: 0;
-        }
-        .stat-card {
-            background: var(--surface); padding: 20px 18px;
-            display: flex; flex-direction: column; gap: 4px;
-        }
-        .stat-value {
-            font-family: 'DM Serif Display', serif;
-            font-size: 28px; line-height: 1; color: var(--navy);
-            letter-spacing: -0.02em;
-        }
-        .stat-label {
-            font-family: 'DM Mono', monospace;
-            font-size: 10px; text-transform: uppercase;
-            letter-spacing: 0.07em; color: var(--ink-4);
-        }
+    /* Results state */
+    .agent-results { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* ── Pipeline ── */
-        .pipeline {
-            display: grid; grid-template-columns: repeat(5, 1fr);
-            gap: 1px; background: var(--rule);
-            border: 1px solid var(--rule); border-radius: 8px; overflow: hidden;
-        }
-        .pipe-step { background: var(--surface); padding: 18px 16px; }
-        .pipe-step.gate { background: var(--amber-light); }
-        .pipe-icon { font-size: 1.1rem; margin-bottom: 10px; }
-        .pipe-name {
-            font-family: 'DM Mono', monospace;
-            font-weight: 500; font-size: 10px; text-transform: uppercase;
-            letter-spacing: 0.08em; margin-bottom: 8px; color: var(--navy);
-        }
-        .pipe-step.gate .pipe-name { color: var(--amber); }
-        .pipe-desc { font-size: 12px; color: var(--ink-3); line-height: 1.55; }
+    .run-header {
+      padding: 12px 24px; border-bottom: .5px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; background: var(--paper);
+    }
+    .run-title { font-family: 'DM Serif Display', serif; font-size: 16px; color: var(--ink); letter-spacing: -.01em; }
+    .run-chips { display: flex; gap: 6px; align-items: center; }
 
-        /* ── Governance ── */
-        .gov-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 1px; background: var(--rule);
-            border: 1px solid var(--rule); border-radius: 8px; overflow: hidden;
-        }
-        .gov-card { background: var(--surface); padding: 22px; }
-        .gov-icon { font-size: 1.1rem; margin-bottom: 10px; }
-        .gov-title { font-weight: 600; font-size: 13px; margin-bottom: 6px; color: var(--ink); }
-        .gov-body { font-size: 12px; color: var(--ink-3); line-height: 1.6; }
-        .gov-body code {
-            background: var(--rule-light); padding: 0.1rem 0.35rem;
-            border-radius: 3px; font-family: 'DM Mono', monospace;
-            font-size: 11px; color: var(--navy);
-        }
+    .results-scroll { flex: 1; overflow-y: auto; }
+    .results-body   { max-width: 740px; padding: 26px 28px 72px; }
 
-        /* ── Assurance ── */
-        .assurance-layout { display: grid; grid-template-columns: 1fr 1.6fr; gap: 24px; align-items: start; }
-        .assurance-pane {
-            background: var(--surface); border: 1px solid var(--rule);
-            border-radius: 8px; padding: 22px;
-        }
-        .pane-label {
-            font-family: 'DM Mono', monospace;
-            font-size: 10px; font-weight: 500; text-transform: uppercase;
-            letter-spacing: 0.1em; color: var(--ink-4); margin-bottom: 18px;
-        }
-        .metric-list { display: flex; flex-direction: column; gap: 13px; }
-        .metric-row { display: flex; flex-direction: column; gap: 5px; }
-        .metric-header { display: flex; justify-content: space-between; align-items: baseline; }
-        .metric-name { font-size: 12px; font-weight: 500; color: var(--ink-2); }
-        .metric-score { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; color: var(--navy); }
-        .metric-bar-bg { height: 4px; background: var(--rule); border-radius: 99px; overflow: hidden; }
-        .metric-bar { height: 100%; border-radius: 99px; background: var(--navy); }
-        .metric-bar.pass { background: var(--teal); }
-        .metric-bar.warn { background: var(--amber); }
-        .assurance-cmd {
-            margin-top: 18px; background: var(--rule-light);
-            border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px;
-            font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-2); line-height: 2;
-        }
-        .cmd-comment { color: var(--ink-4); }
-        .ctl-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .ctl-table th {
-            text-align: left; padding: 8px 10px;
-            font-family: 'DM Mono', monospace;
-            font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em;
-            color: var(--ink-4); border-bottom: 1px solid var(--rule);
-        }
-        .ctl-table td { padding: 8px 10px; border-bottom: 1px solid var(--rule-light); color: var(--ink-3); vertical-align: top; }
-        .ctl-table td:first-child { color: var(--navy); font-family: 'DM Mono', monospace; font-weight: 500; font-size: 11px; white-space: nowrap; }
-        .ctl-table td:nth-child(2) { color: var(--ink-2); font-weight: 500; }
-        .ctl-table tr:last-child td { border-bottom: none; }
-        .status-badge {
-            display: inline-block; padding: 2px 7px; border-radius: 3px;
-            font-family: 'DM Mono', monospace;
-            font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em;
-        }
-        .status-pass { background: var(--teal-light); color: var(--teal); border: 1px solid rgba(15,110,86,0.2); }
-        .status-attn { background: var(--amber-light); color: var(--amber); border: 1px solid rgba(133,79,11,0.2); }
+    /* Query block */
+    .qb-label { margin-bottom: 7px; }
+    .qb-text  { font-size: 15px; color: var(--ink); line-height: 1.55; font-weight: 400; margin-bottom: 26px; }
 
-        /* ── Infrastructure ── */
-        .infra-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-            gap: 1px; background: var(--rule);
-            border: 1px solid var(--rule); border-radius: 8px; overflow: hidden;
-        }
-        .infra-card { background: var(--surface); padding: 20px; }
-        .infra-env {
-            font-family: 'DM Mono', monospace;
-            font-size: 10px; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.09em; margin-bottom: 12px;
-        }
-        .infra-env.demo { color: var(--teal); }
-        .infra-env.prod { color: var(--amber); }
-        .infra-env.regs { color: var(--navy-mid); }
-        .infra-items { list-style: none; font-size: 12px; color: var(--ink-3); }
-        .infra-items li { padding: 3px 0; display: flex; align-items: center; gap: 8px; }
-        .infra-items li::before { content: '—'; color: var(--ink-4); font-size: 10px; flex-shrink: 0; }
+    /* Loading steps */
+    .ld-list { display: flex; flex-direction: column; gap: 0; padding: 4px 0 20px; }
+    .ld-step { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 13px; color: var(--muted); }
+    .ld-step.active { color: var(--ink); }
+    .ld-step.done   { color: var(--ok); }
+    .ld-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+    .ld-step.active .ld-dot { background: var(--navy); animation: pulse 1s ease-in-out infinite; }
+    .ld-step.done   .ld-dot { background: var(--ok); }
 
-        /* ── Demo ── */
-        .demo-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 18px; align-items: start; }
-        .demo-form {
-            background: var(--surface); border: 1px solid var(--rule);
-            border-radius: 8px; padding: 22px;
-        }
-        .field-label {
-            display: block; font-family: 'DM Mono', monospace;
-            font-size: 10px; font-weight: 500; text-transform: uppercase;
-            letter-spacing: 0.09em; color: var(--ink-4); margin-bottom: 8px;
-        }
-        textarea {
-            width: 100%; background: var(--paper);
-            border: 1px solid var(--rule); border-radius: 6px;
-            color: var(--ink); padding: 10px 12px;
-            font-size: 13px; line-height: 1.6; resize: vertical; min-height: 88px;
-            font-family: 'Instrument Sans', sans-serif; transition: border-color 0.15s;
-        }
-        textarea:focus { outline: none; border-color: var(--navy); }
-        .examples { display: flex; flex-direction: column; gap: 5px; margin: 10px 0; }
-        .ex-btn {
-            background: var(--paper); border: 1px solid var(--rule);
-            border-radius: 4px; padding: 7px 10px;
-            font-size: 12px; color: var(--ink-3);
-            cursor: pointer; text-align: left; transition: all 0.15s;
-            font-family: 'Instrument Sans', sans-serif;
-        }
-        .ex-btn:hover { border-color: rgba(29,78,137,0.35); color: var(--navy); background: var(--navy-light); }
-        .slider-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
-        input[type=range] { flex: 1; accent-color: var(--navy); }
-        .slider-val { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 700; color: var(--navy); width: 1.5rem; }
-        .run-btn {
-            width: 100%; background: var(--navy); color: #fff;
-            border: none; border-radius: 6px; padding: 10px;
-            font-family: 'DM Mono', monospace;
-            font-size: 11px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase;
-            cursor: pointer; transition: opacity 0.15s; margin-top: 10px;
-        }
-        .run-btn:hover { opacity: 0.85; }
-        .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .propose-btn-style {
-            margin-top: 6px !important; background: transparent !important;
-            border: 1px solid rgba(133,79,11,0.4) !important; color: var(--amber) !important;
-        }
-        .propose-btn-style:hover { background: var(--amber-light) !important; opacity: 1 !important; }
+    /* Pipeline */
+    .pipeline { display: flex; flex-direction: column; margin-bottom: 22px; }
+    .ps { display: flex; gap: 0; }
+    .ps-track { display: flex; flex-direction: column; align-items: center; width: 22px; flex-shrink: 0; }
+    .ps-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--navy); flex-shrink: 0; margin-top: 4px; }
+    .ps-dot.done { background: var(--ok); }
+    .ps-line { width: 1px; background: var(--border); flex: 1; min-height: 18px; }
+    .ps-body { padding: 0 0 22px 10px; flex: 1; }
+    .ps-name { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
+    .ps-anno { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: .02em; }
 
-        /* ── Response panel ── */
-        .resp-panel {
-            background: var(--surface); border: 1px solid var(--rule);
-            border-radius: 8px; padding: 22px; min-height: 300px;
-        }
-        .resp-empty {
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; height: 256px;
-            color: var(--ink-4); text-align: center; gap: 8px;
-        }
-        .resp-empty .icon { font-size: 2rem; opacity: 0.3; }
-        .resp-empty p { font-size: 13px; }
-        .load-steps { display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
-        .load-step { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-4); transition: color 0.3s; }
-        .load-step.active { color: var(--ink-2); }
-        .load-step.done  { color: var(--teal); }
-        .load-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--rule); flex-shrink: 0; transition: background 0.3s; }
-        .load-step.active .load-dot { background: var(--navy); animation: blink 1s ease-in-out infinite; }
-        .load-step.done  .load-dot { background: var(--teal); }
-        .load-header { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-4); margin-bottom: 16px; }
-        .resp-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--rule); }
-        .meta-chip { display: flex; align-items: center; gap: 4px; background: var(--rule-light); border: 1px solid var(--rule); border-radius: 3px; padding: 3px 8px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--ink-3); }
-        .meta-chip.ok   { background: var(--teal-light);  border-color: rgba(15,110,86,0.25);  color: var(--teal); }
-        .meta-chip.acc  { background: var(--navy-light);  border-color: rgba(29,78,137,0.25);  color: var(--navy); }
-        .meta-chip.warn { background: var(--amber-light); border-color: rgba(133,79,11,0.25); color: var(--amber); }
-        .resp-text { font-size: 14px; line-height: 1.75; color: var(--ink-2); }
-        .resp-text h2 { font-family: 'DM Serif Display', serif; font-size: 18px; margin: 16px 0 6px; color: var(--ink); }
-        .resp-text h3 { font-family: 'DM Serif Display', serif; font-size: 15px; margin: 12px 0 4px; color: var(--ink); }
-        .resp-text ul, .resp-text ol { padding-left: 20px; margin: 6px 0; }
-        .resp-text li { margin-bottom: 3px; }
-        .resp-text p  { margin-bottom: 8px; }
-        .cits-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule); }
-        .cits-label { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-4); margin-bottom: 8px; }
-        .cit-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--ink-3); margin-bottom: 5px; line-height: 1.5; }
-        .cit-num { background: var(--navy-light); color: var(--navy); border: 1px solid rgba(29,78,137,0.2); border-radius: 3px; padding: 1px 6px; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
-        .err-box { background: var(--coral-light); border: 1px solid rgba(153,60,29,0.2); border-radius: 6px; padding: 12px 16px; font-size: 13px; color: var(--coral); }
+    /* Response block */
+    .resp-block {
+      background: var(--surface); border: .5px solid var(--border);
+      border-radius: 8px; padding: 16px 18px;
+      font-size: 13px; line-height: 1.75; color: var(--muted);
+      margin-bottom: 18px;
+    }
+    .resp-block p  { margin-bottom: 8px; }
+    .resp-block p:last-child { margin-bottom: 0; }
+    .resp-block strong { color: var(--ink); font-weight: 600; }
+    .resp-block h2 { font-family: 'DM Serif Display', serif; font-size: 16px; color: var(--ink); margin: 12px 0 5px; }
+    .resp-block h3 { font-family: 'DM Serif Display', serif; font-size: 14px; color: var(--ink); margin: 10px 0 4px; }
+    .resp-block ul, .resp-block ol { padding-left: 18px; margin: 5px 0; }
+    .resp-block li { margin-bottom: 3px; }
 
-        /* ── Signup ── */
-        .signup-strip {
-            background: var(--rule-light);
-            border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
-            padding: 40px 0; margin: 52px 0;
-        }
-        .signup-strip h3 { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--ink); letter-spacing: -0.01em; margin-bottom: 8px; }
-        .signup-strip p { font-size: 14px; color: var(--ink-3); margin-bottom: 16px; max-width: 400px; }
-        .signup-row { display: flex; gap: 8px; max-width: 380px; }
-        .signup-input { flex: 1; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; color: var(--ink); padding: 9px 12px; font-size: 13px; font-family: 'Instrument Sans', sans-serif; transition: border-color 0.15s; }
-        .signup-input:focus { outline: none; border-color: var(--navy); }
-        .signup-btn { background: var(--navy); color: #fff; border: none; border-radius: 6px; padding: 9px 18px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
-        .signup-btn:hover { opacity: 0.85; }
-        .signup-msg { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-4); margin-top: 8px; min-height: 1.2em; }
+    /* Citation chips */
+    .cit-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+    .cit-chip {
+      display: inline-flex; align-items: center;
+      background: var(--info-bg); border: .5px solid var(--info-border);
+      border-radius: 5px; padding: 4px 10px;
+      font-family: 'DM Mono', monospace; font-size: 11px;
+      color: var(--info-text); letter-spacing: .02em; white-space: nowrap;
+    }
 
-        /* ── Footer ── */
-        .page-footer {
-            padding: 28px 0 40px;
-            border-top: 1px solid var(--rule-light);
-            display: flex; align-items: center; justify-content: space-between;
-            flex-wrap: wrap; gap: 12px;
-        }
-        .footer-copy { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-4); letter-spacing: 0.03em; }
-        .footer-links { display: flex; gap: 20px; }
-        .footer-links a { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-4); text-decoration: none; transition: color 0.15s; }
-        .footer-links a:hover { color: var(--navy-mid); }
+    /* HITL gate */
+    .hitl-gate {
+      background: var(--gate-bg); border: .5px solid var(--gate-border);
+      border-radius: 10px; padding: 18px 20px;
+    }
+    .hitl-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .hitl-title { font-family: 'DM Serif Display', serif; font-size: 15px; color: var(--gate-text); }
+    .hitl-badge {
+      font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .05em;
+      text-transform: uppercase; padding: 3px 8px; border-radius: 4px;
+      background: rgba(237,208,154,.35); border: .5px solid var(--gate-border);
+      color: var(--gate-text);
+    }
+    .hitl-body { font-size: 13px; color: var(--gate-text); line-height: 1.6; margin-bottom: 12px; opacity: .8; }
+    .hitl-proposal {
+      background: rgba(255,255,255,.55); border: .5px solid var(--gate-border);
+      border-radius: 6px; padding: 10px 13px; margin-bottom: 14px;
+      font-size: 12px; color: var(--gate-text); line-height: 1.6;
+    }
+    .hitl-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .hitl-audit-id { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--hint); }
+    .hitl-result { margin-top: 10px; padding: 10px 14px; border-radius: 6px; font-size: 13px; line-height: 1.55; }
+    .hitl-result.ok  { background: var(--ok-bg); color: var(--ok); }
+    .hitl-result.err { background: var(--danger-bg); color: var(--danger); }
 
-        /* ── Mobile ── */
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .main-panel { margin-left: 0; }
-            .content-wrap { padding: 0 20px 60px; }
-            .status-bar { padding: 0 20px; }
-            .demo-layout { grid-template-columns: 1fr; }
-            .assurance-layout { grid-template-columns: 1fr; }
-            .pipeline { grid-template-columns: 1fr; }
-            .stat-cards { grid-template-columns: repeat(2, 1fr); }
-        }
-    </style>
+    /* Error */
+    .err-box { background: var(--danger-bg); border: .5px solid var(--danger-border); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--danger); }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       AUDIT LOG PANEL
+    ═══════════════════════════════════════════════════════════════════ */
+    .audit-wrap { flex: 1; overflow: auto; }
+    .audit-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .audit-tbl th {
+      position: sticky; top: 0; z-index: 1;
+      background: var(--sidebar); padding: 10px 16px; text-align: left;
+      font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: .08em; color: var(--hint);
+      border-bottom: .5px solid var(--border); white-space: nowrap;
+    }
+    .audit-tbl td { padding: 10px 16px; border-bottom: .5px solid var(--border); vertical-align: middle; }
+    .audit-tbl tbody tr:hover td { background: rgba(244,241,233,.45); }
+    .audit-tbl tbody tr:last-child td { border-bottom: none; }
+    .td-ts   { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .td-id   { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; color: var(--info-text); white-space: nowrap; }
+    .td-q    { color: var(--ink); max-width: 220px; }
+    .td-step { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); white-space: nowrap; }
+    .td-who  { color: var(--muted); white-space: nowrap; font-size: 12px; }
+    .td-hash { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--hint); white-space: nowrap; }
+    .d-badge {
+      display: inline-block; padding: 2px 7px; border-radius: 4px;
+      font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
+    }
+    .d-approved { background: var(--ok-bg);     color: var(--ok);       border: .5px solid var(--ok-border); }
+    .d-rejected { background: var(--danger-bg); color: var(--danger);   border: .5px solid var(--danger-border); }
+    .d-pending  { background: var(--gate-bg);   color: var(--gate-text);border: .5px solid var(--gate-border); }
+    .d-query    { background: var(--info-bg);   color: var(--info-text);border: .5px solid var(--info-border); }
+    .imm-tag { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--hint); text-transform: uppercase; letter-spacing: .06em; margin-left: 4px; }
+    .audit-empty { padding: 60px 28px; text-align: center; font-size: 13px; color: var(--hint); }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       ARCHITECTURE PANEL
+    ═══════════════════════════════════════════════════════════════════ */
+    .sys-diagram {
+      background: var(--surface); border: .5px solid var(--border);
+      border-radius: 10px; padding: 24px 24px 20px; margin-bottom: 28px;
+      overflow-x: auto;
+    }
+    .diag { display: flex; flex-direction: column; gap: 12px; min-width: 540px; }
+    .diag-row { display: flex; align-items: center; gap: 8px; justify-content: center; flex-wrap: nowrap; }
+    .diag-col { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+    .d-box {
+      padding: 8px 13px; border: .5px solid var(--border);
+      border-radius: 6px; background: var(--sidebar);
+      font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink);
+      text-align: center; white-space: nowrap; line-height: 1.5;
+    }
+    .d-box.pri  { background: var(--info-bg); border-color: var(--info-border); color: var(--info-text); font-weight: 500; }
+    .d-box.gate { background: var(--gate-bg); border-color: var(--gate-border); color: var(--gate-text); }
+    .d-box.ok   { background: var(--ok-bg); border-color: var(--ok-border); color: var(--ok); }
+    .d-arr { color: var(--hint); font-size: 15px; flex-shrink: 0; }
+    .diag-layer-label { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: var(--hint); text-align: center; margin-bottom: 2px; }
+    .diag-vsep { text-align: center; color: var(--border); font-size: 18px; }
+
+    /* ADR cards */
+    .adr-stack { display: flex; flex-direction: column; gap: 10px; }
+    .adr-card { background: var(--surface); border: .5px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .adr-card.prod { border-color: var(--gate-border); }
+    .adr-head { padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: .5px solid var(--border); }
+    .adr-card.prod .adr-head { background: var(--gate-bg); border-color: var(--gate-border); }
+    .adr-num   { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--hint); letter-spacing: .06em; }
+    .adr-card.prod .adr-num { color: var(--gate-text); }
+    .adr-status { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; padding: 2px 7px; border-radius: 3px; }
+    .adr-s-accepted { background: var(--ok-bg);   color: var(--ok);       border: .5px solid var(--ok-border); }
+    .adr-s-prod     { background: var(--gate-bg); color: var(--gate-text);border: .5px solid var(--gate-border); }
+    .adr-body  { padding: 14px 18px; }
+    .adr-title { font-family: 'DM Serif Display', serif; font-size: 15px; color: var(--ink); margin-bottom: 12px; letter-spacing: -.01em; }
+    .adr-rows  { display: grid; grid-template-columns: 80px 1fr; gap: 5px 12px; }
+    .adr-fl    { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--hint); text-transform: uppercase; letter-spacing: .07em; padding-top: 2px; }
+    .adr-fv    { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       ASSURANCE PANEL
+    ═══════════════════════════════════════════════════════════════════ */
+    .ass-layout { display: grid; grid-template-columns: 230px 1fr; gap: 20px; align-items: start; }
+    .metric-pane { background: var(--surface); border: .5px solid var(--border); border-radius: 10px; padding: 18px; }
+    .mp-label { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .09em; color: var(--hint); margin-bottom: 18px; }
+    .m-row { margin-bottom: 14px; }
+    .m-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+    .m-name  { font-size: 12px; font-weight: 500; color: var(--muted); }
+    .m-score { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; color: var(--navy); }
+    .m-bg    { height: 3px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .m-bar   { height: 100%; border-radius: 99px; }
+    .m-ok   { background: var(--ok); }
+    .m-warn { background: var(--warn); }
+
+    .ctl-pane { background: var(--surface); border: .5px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .ctl-head { padding: 13px 16px; border-bottom: .5px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .ctl-head-label { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .09em; color: var(--hint); }
+    .ctl-legend { display: flex; gap: 14px; }
+    .ctl-leg-item { display: flex; align-items: center; gap: 5px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--hint); }
+    .leg-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+    .ctl-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .ctl-tbl th { padding: 8px 12px; text-align: left; font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--hint); border-bottom: .5px solid var(--border); }
+    .ctl-tbl td { padding: 8px 12px; border-bottom: .5px solid var(--border); vertical-align: top; color: var(--muted); }
+    .ctl-tbl td:first-child { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; color: var(--navy); white-space: nowrap; }
+    .ctl-tbl td:nth-child(2) { color: var(--ink); font-weight: 500; font-size: 12px; }
+    .ctl-tbl td:nth-child(3), .ctl-tbl td:nth-child(4) { font-family: 'DM Mono', monospace; font-size: 10px; }
+    .ctl-tbl tr:last-child td { border-bottom: none; }
+    .ctl-badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+    .ctl-pass { background: var(--ok-bg);   color: var(--ok);       border: .5px solid var(--ok-border); }
+    .ctl-attn { background: var(--gate-bg); color: var(--gate-text);border: .5px solid var(--gate-border); }
+
+    /* ── Mobile ─────────────────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      .sidebar { width: 50px; }
+      .sb-brand-text, .sb-section-label, .sb-item span:not(.sb-item-count), .sb-status-label, .sb-meta { display: none; }
+      .sb-item { padding: 10px; justify-content: center; }
+      .sb-item-count { display: none; }
+      .sb-footer { padding: 10px; }
+      .ass-layout { grid-template-columns: 1fr; }
+      .adr-rows  { grid-template-columns: 70px 1fr; }
+    }
+  </style>
 </head>
 <body>
-<div class="app-shell">
+<div class="shell">
 
-    <!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <span class="live-dot" id="brand-dot"></span>
-            <span class="sidebar-brand-text">Regulatory<br>Intelligence Agent</span>
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SIDEBAR
+  ═══════════════════════════════════════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-avatar">R</div>
+      <div>
+        <div class="sb-name">RegIntel</div>
+        <div class="sb-org">CloudKraft</div>
+      </div>
+    </div>
+
+    <div class="sb-section-label">Workspace</div>
+    <nav class="sb-nav">
+      <button class="sb-item active" id="nav-agent"        onclick="showPanel('agent')">
+        <span>Agent</span>
+      </button>
+      <button class="sb-item"        id="nav-audit"        onclick="showPanel('audit')">
+        <span>Audit log</span>
+        <span class="sb-item-count" id="audit-nav-count">4</span>
+      </button>
+      <button class="sb-item"        id="nav-architecture" onclick="showPanel('architecture')">
+        <span>Architecture</span>
+      </button>
+      <button class="sb-item"        id="nav-assurance"    onclick="showPanel('assurance')">
+        <span>Assurance</span>
+      </button>
+    </nav>
+
+    <div class="sb-spacer"></div>
+
+    <div class="sb-footer">
+      <div class="sb-status-row">
+        <span class="status-dot checking" id="status-dot"></span>
+        <span class="sb-status-label"    id="status-text">Checking</span>
+      </div>
+      <div class="sb-meta">gateway: OpenRouter</div>
+      <div class="sb-meta">prod-path: Bedrock</div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       MAIN
+  ═══════════════════════════════════════════════════════════════════ -->
+  <main class="main">
+
+    <!-- ──────────────────────────────────────────────────────────────
+         PANEL: AGENT
+    ─────────────────────────────────────────────────────────────── -->
+    <div class="panel active" id="panel-agent">
+
+      <!-- ── Input state ── -->
+      <div class="agent-input" id="agent-input">
+        <div class="agent-input-body">
+          <div class="ai-greeting">Regulatory Intelligence Agent</div>
+          <p class="ai-sub">
+            Ask a compliance question. The system retrieves grounded context from seeded
+            regulatory documents, maps applicable controls, and drafts a cited response —
+            every step traced and written to the immutable audit log.
+          </p>
+
+          <div class="q-box">
+            <textarea id="question" class="q-textarea" rows="3"
+              placeholder="What does OSFI E-23 require for model validation?"></textarea>
+            <div class="q-bar">
+              <div class="q-bar-left">
+                <span class="topk-label">top-k</span>
+                <input type="number" id="top_k" class="topk-in" value="5" min="2" max="8">
+              </div>
+              <div class="q-btns">
+                <button class="btn btn-ghost" id="btn-query"   onclick="runQuery()">Query</button>
+                <button class="btn btn-primary" id="btn-propose" onclick="runPropose()">Full pipeline →</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="examples">
+            <div class="ex-label">Example queries</div>
+            <div class="ex-list">
+              <button class="ex-item" onclick="setQ(this)">Does our retail credit-scoring model require a Fundamental Rights Impact Assessment under the EU AI Act, and which OSFI E-23 controls apply?</button>
+              <button class="ex-item" onclick="setQ(this)">What are the Basel III minimum capital adequacy requirements?</button>
+              <button class="ex-item" onclick="setQ(this)">What does GDPR Article 17 require for the right to erasure?</button>
+              <button class="ex-item" onclick="setQ(this)">What are the PIPEDA principles for consent and data collection?</button>
+              <button class="ex-item" onclick="setQ(this)">What does ISO 27001 require for privileged access management?</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Results state ── -->
+      <div class="agent-results" id="agent-results" style="display:none;">
+
+        <div class="run-header">
+          <span class="run-title">Regulatory Intelligence Agent</span>
+          <div class="run-chips">
+            <span class="chip">demo</span>
+            <span class="chip run" id="run-id-chip">run #—</span>
+            <button class="link-reset" onclick="resetAgent()">← new query</button>
+          </div>
         </div>
 
-        <div class="sidebar-section">
-            <div class="sidebar-section-label">Navigate</div>
-            <nav class="sidebar-nav">
-                <a class="nav-item active" data-section="overview"      onclick="scrollTo('overview')">Overview</a>
-                <a class="nav-item"        data-section="architecture"  onclick="scrollTo('architecture')">Pipeline</a>
-                <a class="nav-item"        data-section="governance"    onclick="scrollTo('governance')">Governance</a>
-                <a class="nav-item"        data-section="assurance"     onclick="scrollTo('assurance')">Assurance</a>
-                <a class="nav-item"        data-section="demo"          onclick="scrollTo('demo')">Live Demo</a>
-            </nav>
+        <div class="results-scroll">
+          <div class="results-body">
+
+            <div class="sec-label qb-label">Query</div>
+            <div class="qb-text" id="query-display"></div>
+
+            <!-- Loading -->
+            <div id="agent-loading" style="display:none;">
+              <div class="ld-list">
+                <div class="ld-step" id="ls1"><div class="ld-dot"></div>Checking input guardrails</div>
+                <div class="ld-step" id="ls2"><div class="ld-dot"></div>Knowledge Agent — semantic retrieval (pgvector HNSW)</div>
+                <div class="ld-step" id="ls3"><div class="ld-dot"></div>Analysis Agent — mapping controls &amp; drafting response</div>
+                <div class="ld-step" id="ls4"><div class="ld-dot"></div><span id="ls4-label">Checking output guardrails</span></div>
+                <div class="ld-step" id="ls5"><div class="ld-dot"></div><span id="ls5-label">Writing to audit log</span></div>
+                <div class="ld-step" id="ls6" style="display:none;"><div class="ld-dot"></div>Action Agent — generating proposal</div>
+                <div class="ld-step" id="ls7" style="display:none;"><div class="ld-dot" style="background:var(--warn);"></div><span style="color:var(--warn);">First request may take 20–30s — model cold-starting…</span></div>
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div id="agent-content" style="display:none;">
+
+              <!-- Pipeline -->
+              <div class="pipeline">
+                <div class="ps">
+                  <div class="ps-track">
+                    <div class="ps-dot done"></div>
+                    <div class="ps-line"></div>
+                  </div>
+                  <div class="ps-body">
+                    <div class="ps-name">Retrieve context</div>
+                    <div class="ps-anno" id="pa-retrieve">pgvector · Neon</div>
+                  </div>
+                </div>
+                <div class="ps">
+                  <div class="ps-track">
+                    <div class="ps-dot done"></div>
+                    <div class="ps-line"></div>
+                  </div>
+                  <div class="ps-body">
+                    <div class="ps-name">Map controls &amp; assess risk</div>
+                    <div class="ps-anno">LangGraph supervisor · Analysis Agent</div>
+                  </div>
+                </div>
+                <div class="ps">
+                  <div class="ps-track">
+                    <div class="ps-dot done"></div>
+                  </div>
+                  <div class="ps-body">
+                    <div class="ps-name">Draft answer with citations</div>
+                    <div class="ps-anno">Gemma 4 31B via OpenRouter · guardrail screened</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Response -->
+              <div class="resp-block" id="resp-block" style="display:none;"></div>
+
+              <!-- Citations -->
+              <div class="cit-row" id="cit-row"></div>
+
+              <!-- HITL gate -->
+              <div class="hitl-gate" id="hitl-gate" style="display:none;">
+                <div class="hitl-head">
+                  <span class="hitl-title">Human-in-the-loop gate</span>
+                  <span class="hitl-badge" id="hitl-badge">awaiting approval</span>
+                </div>
+                <p class="hitl-body">Reviewer sign-off required before release. The decision is written to the append-only audit log.</p>
+                <div class="hitl-proposal" id="hitl-proposal" style="display:none;"></div>
+                <div id="hitl-actions">
+                  <div class="hitl-actions">
+                    <button class="btn-approve" id="btn-approve" onclick="approveAction()">Approve &amp; log</button>
+                    <button class="btn-reject"  id="btn-reject"  onclick="rejectAction()">Request changes</button>
+                    <span class="hitl-audit-id" id="hitl-audit-id"></span>
+                  </div>
+                </div>
+                <div class="hitl-result" id="hitl-result" style="display:none;"></div>
+              </div>
+
+              <!-- Error -->
+              <div id="resp-error" style="display:none;"></div>
+
+            </div><!-- /agent-content -->
+          </div><!-- /results-body -->
+        </div><!-- /results-scroll -->
+      </div><!-- /agent-results -->
+
+    </div><!-- /panel-agent -->
+
+
+    <!-- ──────────────────────────────────────────────────────────────
+         PANEL: AUDIT LOG
+    ─────────────────────────────────────────────────────────────── -->
+    <div class="panel" id="panel-audit">
+      <div class="ph">
+        <span class="ph-title">Audit log</span>
+        <div class="ph-chips">
+          <span class="chip" id="audit-count-chip">4 entries</span>
+          <span class="chip">append-only</span>
+          <span class="chip">DB-level trigger</span>
         </div>
-
-        <div class="sidebar-divider"></div>
-
-        <div class="sidebar-section">
-            <div class="sidebar-section-label">Links</div>
-            <nav class="sidebar-nav">
-                <a class="nav-item ext" href="https://github.com/faiz-faruqi/reg-intel-agent" target="_blank">GitHub ↗</a>
-                <a class="nav-item ext" href="/docs" target="_blank">API Docs ↗</a>
-            </nav>
+      </div>
+      <div class="audit-wrap">
+        <table class="audit-tbl" id="audit-tbl">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Run ID</th>
+              <th>Query</th>
+              <th>Agent step</th>
+              <th>Decision</th>
+              <th>Reviewer</th>
+              <th>Hash</th>
+            </tr>
+          </thead>
+          <tbody id="audit-tbody"></tbody>
+        </table>
+        <div class="audit-empty" id="audit-empty" style="display:none;">
+          No entries yet. Run a query in the Agent panel.
         </div>
+      </div>
+    </div>
 
-        <div class="sidebar-spacer"></div>
 
-        <div class="sidebar-footer">
-            <a href="https://faizfaruqi.com">← faizfaruqi.com</a>
-            <a href="https://cloudkraft.com" target="_blank">cloudkraft.com</a>
+    <!-- ──────────────────────────────────────────────────────────────
+         PANEL: ARCHITECTURE
+    ─────────────────────────────────────────────────────────────── -->
+    <div class="panel" id="panel-architecture">
+      <div class="ph">
+        <span class="ph-title">Architecture</span>
+        <div class="ph-chips">
+          <span class="chip">LangGraph</span>
+          <span class="chip">5 ADRs</span>
+          <span class="chip">C4 L2</span>
         </div>
-    </aside>
+      </div>
+      <div class="panel-scroll">
+        <div class="panel-body">
 
-    <!-- ── Main panel ───────────────────────────────────────────────────────── -->
-    <div class="main-panel">
+          <div class="sec-h">System overview</div>
+          <p class="sec-p">Three specialist agents coordinated by a LangGraph supervisor. Every step is traced in LangSmith and appended to an immutable PostgreSQL audit log — tamper-proof by database trigger, not convention.</p>
 
-        <!-- Status bar -->
-        <div class="status-bar">
-            <div class="status-indicators">
-                <span class="status-item"><span class="s-dot checking" id="api-dot"></span>API</span>
-                <span class="status-item"><span class="s-dot checking" id="db-dot"></span>pgvector</span>
-                <span class="status-item"><span class="s-dot checking" id="ls-dot"></span>LangSmith</span>
+          <div class="sys-diagram">
+            <div class="diag">
+              <div>
+                <div class="diag-layer-label">Client</div>
+                <div class="diag-row">
+                  <div class="d-box">Browser</div>
+                  <div class="d-arr">·</div>
+                  <div class="d-box">CLI (python -m src.cli)</div>
+                </div>
+              </div>
+              <div class="diag-vsep">↓</div>
+              <div>
+                <div class="diag-layer-label">API — Railway</div>
+                <div class="diag-row">
+                  <div class="d-box pri">FastAPI</div>
+                  <div class="d-arr">→</div>
+                  <div class="d-box">slowapi rate limiter</div>
+                  <div class="d-arr">→</div>
+                  <div class="d-box">Application Guardrails</div>
+                </div>
+              </div>
+              <div class="diag-vsep">↓</div>
+              <div>
+                <div class="diag-layer-label">Orchestration</div>
+                <div class="diag-row">
+                  <div class="d-box pri" style="font-weight:600;padding:10px 20px;">LangGraph Supervisor</div>
+                </div>
+              </div>
+              <div class="diag-vsep">↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↓</div>
+              <div>
+                <div class="diag-layer-label">Agents</div>
+                <div class="diag-row">
+                  <div class="d-box">Knowledge Agent</div>
+                  <div style="width:14px;"></div>
+                  <div class="d-box">Analysis Agent</div>
+                  <div style="width:14px;"></div>
+                  <div class="d-box gate">Action Agent ⚡ HITL</div>
+                </div>
+              </div>
+              <div class="diag-vsep">↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↓</div>
+              <div>
+                <div class="diag-layer-label">Storage &amp; Tooling</div>
+                <div class="diag-row">
+                  <div class="d-box" style="line-height:1.6;">Neon pgvector<br><span style="font-size:9px;color:var(--hint);">HNSW · 15 chunks</span></div>
+                  <div style="width:10px;"></div>
+                  <div class="d-box" style="line-height:1.6;">PostgreSQL audit_log<br><span style="font-size:9px;color:var(--hint);">append-only trigger</span></div>
+                  <div style="width:10px;"></div>
+                  <div class="d-box gate" style="line-height:1.6;">GitHub · Jira<br><span style="font-size:9px;color:var(--hint);">TICKET_BACKEND env</span></div>
+                </div>
+              </div>
+              <div>
+                <div class="diag-layer-label" style="margin-top:12px;">Observability</div>
+                <div class="diag-row">
+                  <div class="d-box ok">LangSmith tracing</div>
+                  <div class="d-arr">+</div>
+                  <div class="d-box gate">OpenRouter (demo) → Amazon Bedrock (prod · ADR-005)</div>
+                </div>
+              </div>
             </div>
-            <span class="status-meta">reg-intel.demo.cloudkraft.com</span>
+          </div>
+
+          <div class="sec-h">Architecture decision records</div>
+          <p class="sec-p">Five decisions that define the current shape of the system and its production transition path.</p>
+
+          <div class="adr-stack">
+
+            <div class="adr-card">
+              <div class="adr-head">
+                <span class="adr-num">ADR-001</span>
+                <span class="adr-status adr-s-accepted">Accepted</span>
+              </div>
+              <div class="adr-body">
+                <div class="adr-title">LangGraph vs. Amazon Bedrock Agents</div>
+                <div class="adr-rows">
+                  <span class="adr-fl">Decision</span>
+                  <span class="adr-fv">Use LangGraph with a supervisor + specialist pattern for deterministic step ordering and explicit interrupt points.</span>
+                  <span class="adr-fl">Context</span>
+                  <span class="adr-fv">Bedrock Agents is managed with opaque routing. A compliance audit trail must be inspectable and reproducible — LangGraph exposes the full graph.</span>
+                  <span class="adr-fl">Trade-off</span>
+                  <span class="adr-fv">Bedrock Agents reduces ops burden and is preferred when the team lacks ML platform capacity. LangGraph requires maintaining graph code.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="adr-card">
+              <div class="adr-head">
+                <span class="adr-num">ADR-002</span>
+                <span class="adr-status adr-s-accepted">Accepted</span>
+              </div>
+              <div class="adr-body">
+                <div class="adr-title">pgvector on Neon (demo) vs. dedicated vector DB (production)</div>
+                <div class="adr-rows">
+                  <span class="adr-fl">Decision</span>
+                  <span class="adr-fv">Co-locate the vector store in the same Neon PostgreSQL instance as the audit log. Single connection string, zero incremental cost at demo scale.</span>
+                  <span class="adr-fl">Context</span>
+                  <span class="adr-fv">15 chunks, ~2 QPS. A dedicated Pinecone cluster adds $70+/month with no latency benefit. Neon free tier handles this comfortably.</span>
+                  <span class="adr-fl">Trade-off</span>
+                  <span class="adr-fv">Migration trigger: corpus exceeds ~1M chunks, QPS &gt; 50, or SLA requires sub-10ms P99. Then: Aurora Serverless v2 + pgvector or OpenSearch Serverless.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="adr-card">
+              <div class="adr-head">
+                <span class="adr-num">ADR-003</span>
+                <span class="adr-status adr-s-accepted">Accepted</span>
+              </div>
+              <div class="adr-body">
+                <div class="adr-title">Application guardrails vs. Bedrock Guardrails</div>
+                <div class="adr-rows">
+                  <span class="adr-fl">Decision</span>
+                  <span class="adr-fv">Implement application-level guardrails (src/guardrails.py) mirroring the Bedrock Guardrails API. Production swap is a config-only change.</span>
+                  <span class="adr-fl">Context</span>
+                  <span class="adr-fv">Bedrock Guardrails requires AWS. Demo runs on Railway. Mirrored API surface means business logic is identical in both environments.</span>
+                  <span class="adr-fl">Trade-off</span>
+                  <span class="adr-fv">Bedrock Guardrails adds managed PII redaction, groundedness checks, and policy enforcement at the inference layer — preferred for production OSFI E-23 alignment.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="adr-card">
+              <div class="adr-head">
+                <span class="adr-num">ADR-004</span>
+                <span class="adr-status adr-s-accepted">Accepted</span>
+              </div>
+              <div class="adr-body">
+                <div class="adr-title">Railway Hobby (demo) vs. AWS App Runner / ECS Fargate (production)</div>
+                <div class="adr-rows">
+                  <span class="adr-fl">Decision</span>
+                  <span class="adr-fv">Deploy to Railway Hobby. Auto-deploys from main branch, ~$5–10/month compute. Services sleep after 30 min inactivity — acceptable for demo.</span>
+                  <span class="adr-fl">Context</span>
+                  <span class="adr-fv">No real client traffic, no SLA. Railway removes all infra overhead — right for an interview artifact at effectively zero marginal cost.</span>
+                  <span class="adr-fl">Trade-off</span>
+                  <span class="adr-fv">Production trigger: a real engagement, private networking requirement, or SLA. App Runner (simpler) or ECS Fargate (full control) — IAM role replaces API key.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="adr-card prod">
+              <div class="adr-head">
+                <span class="adr-num">ADR-005</span>
+                <span class="adr-status adr-s-prod">Production path</span>
+              </div>
+              <div class="adr-body">
+                <div class="adr-title">OpenRouter (demo) vs. Amazon Bedrock (production)</div>
+                <div class="adr-rows">
+                  <span class="adr-fl">Decision</span>
+                  <span class="adr-fv">Use OpenRouter with google/gemma-4-31b-it:free for generation and text-embedding-3-small for embeddings. Production swaps to Bedrock — no application code changes.</span>
+                  <span class="adr-fl">Context</span>
+                  <span class="adr-fv">Free-tier generation = $0 at demo volume. Same ChatOpenAI client class works with a different base_url — OpenAI SDK compatibility is the critical design choice.</span>
+                  <span class="adr-fl">Trade-off</span>
+                  <span class="adr-fv">Bedrock requires AWS account, 1024-dim embeddings (rebuild HNSW index), and IAM role assignment. Data stays in-region and OSFI E-23 MDS compliance is cleaner.</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
+      </div>
+    </div><!-- /panel-architecture -->
 
-        <!-- Scrollable content -->
-        <div class="main-content" id="main-content">
-        <div class="content-wrap">
 
-            <!-- ── Hero ────────────────────────────────────────────────────── -->
-            <div class="hero" id="overview">
-                <div class="sec-tag">CloudKraft Consulting</div>
-                <h1>A governed multi-agent system<br>for <em>regulated industries</em></h1>
-                <p class="hero-sub">
-                    Answers compliance questions by retrieving grounded regulatory context,
-                    drafting cited responses, and proposing audited write actions —
-                    all under mandatory human oversight.
+    <!-- ──────────────────────────────────────────────────────────────
+         PANEL: ASSURANCE
+    ─────────────────────────────────────────────────────────────── -->
+    <div class="panel" id="panel-assurance">
+      <div class="ph">
+        <span class="ph-title">Assurance</span>
+        <div class="ph-chips">
+          <span class="chip">RAGAS</span>
+          <span class="chip">NIST AI RMF</span>
+          <span class="chip">OSFI E-23</span>
+        </div>
+      </div>
+      <div class="panel-scroll">
+        <div class="panel-body">
+
+          <div class="sec-h">Enterprise AI Assurance Framework</div>
+          <p class="sec-p">An independent evaluation pipeline treats this system as a subject-under-test and scores its outputs with RAGAS against a 15-item golden dataset, then maps results to NIST AI RMF functions and OSFI E-23 model risk controls — generating an audit-ready MRA report.</p>
+
+          <div class="ass-layout">
+
+            <!-- RAGAS scores -->
+            <div class="metric-pane">
+              <div class="mp-label">RAGAS metrics — mock run</div>
+
+              <div class="m-row">
+                <div class="m-header"><span class="m-name">Faithfulness</span><span class="m-score">0.860</span></div>
+                <div class="m-bg"><div class="m-bar m-warn" style="width:86%"></div></div>
+              </div>
+              <div class="m-row">
+                <div class="m-header"><span class="m-name">Answer relevancy</span><span class="m-score">0.906</span></div>
+                <div class="m-bg"><div class="m-bar m-ok" style="width:90.6%"></div></div>
+              </div>
+              <div class="m-row">
+                <div class="m-header"><span class="m-name">Context precision</span><span class="m-score">0.866</span></div>
+                <div class="m-bg"><div class="m-bar m-warn" style="width:86.6%"></div></div>
+              </div>
+              <div class="m-row">
+                <div class="m-header"><span class="m-name">Context recall</span><span class="m-score">0.852</span></div>
+                <div class="m-bg"><div class="m-bar m-warn" style="width:85.2%"></div></div>
+              </div>
+              <div class="m-row" style="margin-bottom:0;">
+                <div class="m-header"><span class="m-name">Refusal accuracy</span><span class="m-score">1.000</span></div>
+                <div class="m-bg"><div class="m-bar m-ok" style="width:100%"></div></div>
+              </div>
+
+              <div style="margin-top:18px;padding-top:16px;border-top:.5px solid var(--border);">
+                <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--hint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px;">Golden dataset</div>
+                <p style="font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:12px;">
+                  15 items: Q01–Q13 answerable, Q14–Q15 out-of-scope (refusal test).
+                  Covers GDPR, Basel III, OSFI E-23, NIST AI RMF, EU AI Act, ISO 42001.
                 </p>
-                <div class="stat-cards">
-                    <div class="stat-card">
-                        <div class="stat-value">3</div>
-                        <div class="stat-label">Specialist Agents</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">10</div>
-                        <div class="stat-label">Regulatory Frameworks</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">8</div>
-                        <div class="stat-label">NIST Controls Mapped</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">1.000</div>
-                        <div class="stat-label">Refusal Accuracy</div>
-                    </div>
-                </div>
+                <a href="https://github.com/faiz-faruqi/reg-intel-agent/blob/main/evaluation/samples/model_risk_assessment_sample.md"
+                   target="_blank"
+                   style="font-family:'DM Mono',monospace;font-size:11px;color:var(--navy);text-decoration:none;border-bottom:.5px solid rgba(29,78,137,.3);">
+                  View MRA report →
+                </a>
+              </div>
             </div>
 
-            <!-- ── Architecture ─────────────────────────────────────────────── -->
-            <div class="section-block" id="architecture">
-                <div class="sec-label">Architecture</div>
-                <h2>What Happens When You Submit a Query</h2>
-                <p class="sec-sub">
-                    A LangGraph supervisor routes your question through three specialist agents.
-                    Every step is traced in LangSmith and appended to an immutable PostgreSQL audit log.
-                </p>
-                <div class="pipeline">
-                    <div class="pipe-step">
-                        <div class="pipe-icon">🛡️</div>
-                        <div class="pipe-name">Input Guardrail</div>
-                        <div class="pipe-desc">Screens for denied topics (hacking, evasion, harmful content) and PII patterns before any agent sees the question.</div>
-                    </div>
-                    <div class="pipe-step">
-                        <div class="pipe-icon">🔍</div>
-                        <div class="pipe-name">Knowledge Agent</div>
-                        <div class="pipe-desc">Embeds the question and runs cosine similarity search via pgvector HNSW index over seeded regulatory docs (GDPR, Basel III, OSFI).</div>
-                    </div>
-                    <div class="pipe-step">
-                        <div class="pipe-icon">✍️</div>
-                        <div class="pipe-name">Analysis Agent</div>
-                        <div class="pipe-desc">Drafts a compliance-grounded response using retrieved chunks. Citations are mandatory — un-cited claims are flagged, not emitted.</div>
-                    </div>
-                    <div class="pipe-step gate">
-                        <div class="pipe-icon">👤</div>
-                        <div class="pipe-name">Human Approval Gate</div>
-                        <div class="pipe-desc">Any write action (Jira ticket, GitHub issue) is proposed and the graph pauses. A human must explicitly approve before any write executes.</div>
-                    </div>
-                    <div class="pipe-step">
-                        <div class="pipe-icon">📋</div>
-                        <div class="pipe-name">Audit Log</div>
-                        <div class="pipe-desc">Every step, tool call, and approval appended to PostgreSQL. DELETE and UPDATE are blocked by a database-level trigger — tamper-proof by design.</div>
-                    </div>
+            <!-- Control mapping -->
+            <div class="ctl-pane">
+              <div class="ctl-head">
+                <span class="ctl-head-label">Control mapping — NIST AI RMF &amp; OSFI E-23</span>
+                <div class="ctl-legend">
+                  <span class="ctl-leg-item"><span class="leg-dot" style="background:var(--ok);"></span>Pass</span>
+                  <span class="ctl-leg-item"><span class="leg-dot" style="background:var(--warn);"></span>Attention (&lt;0.90)</span>
                 </div>
+              </div>
+              <table class="ctl-tbl">
+                <thead>
+                  <tr><th>ID</th><th>Control</th><th>NIST AI RMF</th><th>OSFI E-23</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>CTL-01</td><td>Output groundedness</td><td>MEASURE 2.5, 2.9</td><td>Validation</td><td><span class="ctl-badge ctl-attn">Attention</span></td></tr>
+                  <tr><td>CTL-02</td><td>Answer relevance</td><td>MEASURE 2.3</td><td>Design/Dev</td><td><span class="ctl-badge ctl-pass">Pass</span></td></tr>
+                  <tr><td>CTL-03</td><td>Retrieval precision</td><td>MAP 3.3 / MEASURE 2.5</td><td>Data</td><td><span class="ctl-badge ctl-attn">Attention</span></td></tr>
+                  <tr><td>CTL-04</td><td>Retrieval recall</td><td>MEASURE 2.5</td><td>Data</td><td><span class="ctl-badge ctl-attn">Attention</span></td></tr>
+                  <tr><td>CTL-05</td><td>Scope / refusal</td><td>GOVERN 1.1 / MANAGE 1.1</td><td>Governance</td><td><span class="ctl-badge ctl-pass">Pass</span></td></tr>
+                  <tr><td>CTL-06</td><td>Human-in-the-loop</td><td>GOVERN 1.2 / MANAGE 2.1</td><td>Deployment</td><td><span class="ctl-badge ctl-pass">Pass</span></td></tr>
+                  <tr><td>CTL-07</td><td>Immutable audit log</td><td>GOVERN 1.4 / MAP 4.1</td><td>Monitoring</td><td><span class="ctl-badge ctl-pass">Pass</span></td></tr>
+                  <tr><td>CTL-08</td><td>Input/output guardrails</td><td>MANAGE 2.2</td><td>Deployment</td><td><span class="ctl-badge ctl-pass">Pass</span></td></tr>
+                </tbody>
+              </table>
             </div>
 
-            <!-- ── Governance ────────────────────────────────────────────────── -->
-            <div class="section-block" id="governance">
-                <div class="sec-label">Governance</div>
-                <h2>Built for Regulated Environments</h2>
-                <p class="sec-sub">
-                    Six non-negotiable pillars that make this system auditable, safe, and honest.
-                    Each maps directly to a production AWS equivalent — described in the ADRs.
-                </p>
-                <div class="gov-grid">
-                    <div class="gov-card">
-                        <div class="gov-icon">🛡️</div>
-                        <div class="gov-title">Bedrock Guardrails (mirrored)</div>
-                        <div class="gov-body">Application-level guardrails screen every input and output for denied topics, PII, and harmful content. API-compatible with AWS Bedrock Guardrails — production swap is a single config change.</div>
-                    </div>
-                    <div class="gov-card">
-                        <div class="gov-icon">📋</div>
-                        <div class="gov-title">Immutable Audit Log</div>
-                        <div class="gov-body">Every agent step, tool call, and human approval is appended to PostgreSQL. A database-level trigger prevents any DELETE or UPDATE. Regulators can trust the log is tamper-proof — not just by convention.</div>
-                    </div>
-                    <div class="gov-card">
-                        <div class="gov-icon">👤</div>
-                        <div class="gov-title">Human-in-the-Loop Gate</div>
-                        <div class="gov-body">The Action Agent proposes write actions — it never executes them. LangGraph's <code>interrupt_before</code> pauses the graph until a human explicitly approves. Rejection is also logged.</div>
-                    </div>
-                    <div class="gov-card">
-                        <div class="gov-icon">📎</div>
-                        <div class="gov-title">Citations Mandatory</div>
-                        <div class="gov-body">Every factual claim must reference a numbered source. Un-cited responses are flagged before emission. Hallucination is constrained at the prompt and enforcement layer — both.</div>
-                    </div>
-                    <div class="gov-card">
-                        <div class="gov-icon">🔑</div>
-                        <div class="gov-title">IAM Least-Privilege</div>
-                        <div class="gov-body">The Bedrock IAM user is scoped to <code>bedrock:InvokeModel</code> on target model ARNs only. In production (AWS compute), this becomes an IAM role — no long-lived access keys at all.</div>
-                    </div>
-                    <div class="gov-card">
-                        <div class="gov-icon">🔭</div>
-                        <div class="gov-title">Full Observability</div>
-                        <div class="gov-body">Every agent step and LLM call is traced in LangSmith. The full graph — supervisor routing, retrieval results, draft generations — is visible, replayable, and attributable to a specific run.</div>
-                    </div>
-                </div>
-            </div>
+          </div><!-- /ass-layout -->
 
-            <!-- ── Assurance ─────────────────────────────────────────────────── -->
-            <div class="section-block" id="assurance">
-                <div class="sec-label">Assurance</div>
-                <h2>Enterprise AI Assurance Framework</h2>
-                <p class="sec-sub">
-                    An independent evaluation layer treats this Agent as a system-under-test,
-                    scores its outputs with RAGAS, and generates an audit-ready Model Risk Assessment
-                    mapped to NIST AI RMF and OSFI E-23 (effective May 1, 2027).
-                </p>
-                <div class="assurance-layout">
-                    <div class="assurance-pane">
-                        <div class="pane-label">Evaluation Metrics — mock run</div>
-                        <div class="metric-list">
-                            <div class="metric-row">
-                                <div class="metric-header"><span class="metric-name">Faithfulness (groundedness)</span><span class="metric-score">0.860</span></div>
-                                <div class="metric-bar-bg"><div class="metric-bar warn" style="width:86%"></div></div>
-                            </div>
-                            <div class="metric-row">
-                                <div class="metric-header"><span class="metric-name">Answer relevancy</span><span class="metric-score">0.906</span></div>
-                                <div class="metric-bar-bg"><div class="metric-bar pass" style="width:90.6%"></div></div>
-                            </div>
-                            <div class="metric-row">
-                                <div class="metric-header"><span class="metric-name">Context precision</span><span class="metric-score">0.866</span></div>
-                                <div class="metric-bar-bg"><div class="metric-bar warn" style="width:86.6%"></div></div>
-                            </div>
-                            <div class="metric-row">
-                                <div class="metric-header"><span class="metric-name">Context recall</span><span class="metric-score">0.852</span></div>
-                                <div class="metric-bar-bg"><div class="metric-bar warn" style="width:85.2%"></div></div>
-                            </div>
-                            <div class="metric-row">
-                                <div class="metric-header"><span class="metric-name">Refusal correctness</span><span class="metric-score">1.000</span></div>
-                                <div class="metric-bar-bg"><div class="metric-bar pass" style="width:100%"></div></div>
-                            </div>
-                        </div>
-                        <p style="margin-top:18px;font-size:12px;color:var(--ink-3);line-height:1.7;">
-                            An independent RAGAS evaluation pipeline scores the deployed Agent against
-                            a 15-item golden dataset mapped to NIST AI RMF and OSFI E-23.
-                            <a href="https://github.com/faiz-faruqi/reg-intel-agent/tree/main/evaluation" target="_blank"
-                               style="color:var(--navy);text-decoration:none;border-bottom:1px solid rgba(29,78,137,0.3);white-space:nowrap;">
-                                View evaluation framework ↗</a>
-                        </p>
-                    </div>
-                    <div>
-                        <div class="pane-label" style="margin-bottom:10px;">Control Mapping — NIST AI RMF &amp; OSFI E-23</div>
-                        <div style="display:flex;gap:16px;margin-bottom:12px;">
-                            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--ink-4);display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--teal);"></span>Pass — control implemented and operating</span>
-                            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--ink-4);display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);"></span>Attention — score below 0.90 threshold</span>
-                        </div>
-                        <div style="background:var(--surface);border:1px solid var(--rule);border-radius:8px;overflow:hidden;">
-                            <table class="ctl-table">
-                                <thead><tr><th>ID</th><th>Control</th><th>NIST AI RMF</th><th>OSFI E-23</th><th>Status</th></tr></thead>
-                                <tbody>
-                                    <tr><td>CTL-01</td><td>Output groundedness</td><td>MEASURE 2.5, 2.9</td><td>Validation</td><td><span class="status-badge status-attn">Attention</span></td></tr>
-                                    <tr><td>CTL-02</td><td>Answer relevance</td><td>MEASURE 2.3</td><td>Design/Dev</td><td><span class="status-badge status-pass">Pass</span></td></tr>
-                                    <tr><td>CTL-03</td><td>Retrieval precision</td><td>MAP 3.3 / MEASURE 2.5</td><td>Data</td><td><span class="status-badge status-attn">Attention</span></td></tr>
-                                    <tr><td>CTL-04</td><td>Retrieval recall</td><td>MEASURE 2.5</td><td>Data</td><td><span class="status-badge status-attn">Attention</span></td></tr>
-                                    <tr><td>CTL-05</td><td>Scope / refusal</td><td>GOVERN 1.1 / MANAGE 1.1</td><td>Governance</td><td><span class="status-badge status-pass">Pass</span></td></tr>
-                                    <tr><td>CTL-06</td><td>Human-in-the-loop</td><td>GOVERN 1.2 / MANAGE 2.1</td><td>Deployment</td><td><span class="status-badge status-pass">Pass</span></td></tr>
-                                    <tr><td>CTL-07</td><td>Immutable audit log</td><td>GOVERN 1.4 / MAP 4.1</td><td>Monitoring</td><td><span class="status-badge status-pass">Pass</span></td></tr>
-                                    <tr><td>CTL-08</td><td>Input/output guardrails</td><td>MANAGE 2.2</td><td>Deployment</td><td><span class="status-badge status-pass">Pass</span></td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <p style="font-size:12px;color:var(--ink-4);margin-top:10px;">
-                            Status from mock run. Full report:
-                            <a href="https://github.com/faiz-faruqi/reg-intel-agent/blob/main/evaluation/samples/model_risk_assessment_sample.md" target="_blank" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--navy);text-decoration:none;border-bottom:1px solid rgba(29,78,137,0.3);">model_risk_assessment_sample.md ↗</a>
-                        </p>
-                    </div>
-                </div>
-            </div>
+          <div style="margin-top:28px;padding-top:20px;border-top:.5px solid var(--border);">
+            <div class="sec-h" style="font-size:15px;margin-bottom:8px;">Run the evaluation harness</div>
+            <p style="font-size:13px;color:var(--muted);line-height:1.65;max-width:540px;">
+              The full RAGAS pipeline is in <code style="font-family:'DM Mono',monospace;background:var(--sidebar);padding:2px 6px;border-radius:4px;font-size:12px;">evaluation/run_assurance.py</code>.
+              Run in mock mode (no API keys required) or live mode against the deployed system.
+              Generates the MRA report with NIST AI RMF and OSFI E-23 control status.
+              See <a href="https://github.com/faiz-faruqi/reg-intel-agent/tree/main/evaluation" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:.5px solid rgba(29,78,137,.3);">evaluation/ on GitHub →</a>
+            </p>
+          </div>
 
-            <!-- ── Infrastructure ────────────────────────────────────────────── -->
-            <div class="section-block" id="infrastructure">
-                <div class="sec-label">Infrastructure</div>
-                <h2>Two-Tier Deployment Strategy</h2>
-                <p class="sec-sub">
-                    Live on Railway with Neon PostgreSQL at ~CAD $20–35/month.
-                    The production path is fully designed in ADRs — moving to AWS changes
-                    infrastructure, not application code.
-                </p>
-                <div class="infra-grid">
-                    <div class="infra-card">
-                        <div class="infra-env demo">● Current Tier</div>
-                        <ul class="infra-items">
-                            <li>Railway (FastAPI API)</li>
-                            <li>Neon PostgreSQL + pgvector</li>
-                            <li>OpenRouter → Claude Sonnet</li>
-                            <li>LangSmith tracing</li>
-                            <li>~CAD $20–35/month total</li>
-                            <li>Auto-scales to zero on idle</li>
-                        </ul>
-                    </div>
-                    <div class="infra-card">
-                        <div class="infra-env prod">● Production Path — ADR-004</div>
-                        <ul class="infra-items">
-                            <li>AWS App Runner / ECS Fargate</li>
-                            <li>Aurora Serverless v2 + pgvector</li>
-                            <li>Amazon Bedrock (IAM role)</li>
-                            <li>AWS Secrets Manager</li>
-                            <li>Private VPC + WAF</li>
-                            <li>Always-on, private networking</li>
-                        </ul>
-                    </div>
-                    <div class="infra-card">
-                        <div class="infra-env regs">● Compliance Alignment</div>
-                        <ul class="infra-items">
-                            <li>OSFI E-23 model risk</li>
-                            <li>GDPR Article 5 data minimisation</li>
-                            <li>Basel III capital adequacy</li>
-                            <li>Append-only audit trail</li>
-                            <li>Bedrock Guardrails</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+        </div>
+      </div>
+    </div><!-- /panel-assurance -->
 
-            <!-- ── Live Demo ──────────────────────────────────────────────────── -->
-            <div class="section-block" id="demo">
-                <div class="sec-label">Live Demo</div>
-                <h2>Ask a Compliance Question</h2>
-                <p class="sec-sub">
-                    The API is live. Submit a question — it runs through the full Knowledge + Analysis
-                    agent graph and returns a cited response grounded in seeded regulatory documents
-                    (GDPR, Basel III, OSFI, NIST AI RMF, EU AI Act, ISO 42001).
-                </p>
-                <div class="demo-layout">
-                    <div class="demo-form">
-                        <label class="field-label">Compliance Question</label>
-                        <textarea id="question" placeholder="e.g. What are GDPR data minimisation requirements?"></textarea>
-                        <div style="margin:10px 0 6px;"><span class="field-label">Try an example</span></div>
-                        <div class="examples">
-                            <button class="ex-btn" onclick="setQ(this)">What are GDPR data minimisation requirements?</button>
-                            <button class="ex-btn" onclick="setQ(this)">What are the Basel III minimum capital adequacy requirements?</button>
-                            <button class="ex-btn" onclick="setQ(this)">What does OSFI E-23 require for model validation?</button>
-                            <button class="ex-btn" onclick="setQ(this)">What does ISO 27001 require for privileged access management?</button>
-                            <button class="ex-btn" onclick="setQ(this)">What are the PIPEDA principles for consent and data collection?</button>
-                            <button class="ex-btn" onclick="setQ(this)">What are the Basel III liquidity requirements (LCR and NSFR)?</button>
-                        </div>
-                        <label class="field-label" style="margin-top:14px;display:block;">Top-K Chunks Retrieved</label>
-                        <div class="slider-row">
-                            <input type="range" id="top_k" min="2" max="8" value="5" oninput="document.getElementById('kval').textContent=this.value">
-                            <span class="slider-val" id="kval">5</span>
-                        </div>
-                        <button class="run-btn" id="run-btn" onclick="runQuery()">Run Query →</button>
-                        <button class="run-btn propose-btn-style" id="propose-btn" onclick="runPropose()">Run Full Pipeline + Propose Action →</button>
-                        <div style="margin-top:8px;font-size:11px;color:var(--ink-4);font-family:'DM Mono',monospace;">Ctrl+Enter to submit · Full pipeline includes the Action Agent</div>
-                    </div>
-
-                    <div class="resp-panel" id="resp-panel">
-                        <div class="resp-empty" id="resp-empty">
-                            <div class="icon">⚖️</div>
-                            <p>Submit a compliance question to see<br>the cited agent response here.</p>
-                        </div>
-                        <div id="resp-loading" style="display:none;">
-                            <div class="load-header">Agent pipeline running</div>
-                            <div class="load-steps">
-                                <div class="load-step" id="ls1"><div class="load-dot"></div>Checking input guardrails</div>
-                                <div class="load-step" id="ls2"><div class="load-dot"></div>Knowledge Agent: semantic retrieval (pgvector HNSW)</div>
-                                <div class="load-step" id="ls3"><div class="load-dot"></div>Analysis Agent: drafting cited response</div>
-                                <div class="load-step" id="ls4"><div class="load-dot"></div><span id="ls4-label">Checking output guardrails</span></div>
-                                <div class="load-step" id="ls5"><div class="load-dot"></div><span id="ls5-label">Writing to audit log</span></div>
-                                <div class="load-step" id="ls7" style="display:none;"><div class="load-dot"></div><span style="color:var(--warning)">Model still generating — first request may take 20–30 s, subsequent queries are fast…</span></div>
-                                <div class="load-step" id="ls6" style="display:none;"><div class="load-dot"></div>Action Agent: generating proposal</div>
-                            </div>
-                        </div>
-                        <div id="resp-content" style="display:none;">
-                            <div class="resp-meta" id="resp-meta"></div>
-                            <div class="resp-text" id="resp-text"></div>
-                            <div class="cits-section" id="cits-section"></div>
-                        </div>
-                        <div id="proposal-block" style="display:none;margin-top:20px;padding-top:18px;border-top:1px solid var(--rule);">
-                            <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.09em;color:var(--amber);margin-bottom:10px;">⚡ Action Agent — Proposed Ticket</div>
-                            <div id="proposal-content" style="background:var(--paper);border:1px solid rgba(133,79,11,0.2);border-radius:6px;padding:14px 16px;font-size:13px;line-height:1.65;"></div>
-                            <div id="hitl-gate" style="margin-top:10px;background:var(--amber-light);border:1px solid rgba(133,79,11,0.2);border-radius:6px;padding:14px 16px;">
-                                <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.09em;color:var(--amber);margin-bottom:6px;">👤 HITL Gate — Awaiting Decision</div>
-                                <div style="font-size:12px;color:var(--ink-3);margin-bottom:12px;line-height:1.6;">The Action Agent has proposed a ticket. No write has executed. Approve to create the ticket in the configured backend, or reject to log the decision and take no action.</div>
-                                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                    <button id="approve-btn" onclick="approveAction()" style="padding:8px 16px;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;border-radius:4px;border:none;background:var(--teal);color:#fff;cursor:pointer;transition:opacity 0.15s;">✓ Approve &amp; Create Ticket</button>
-                                    <button id="reject-btn" onclick="rejectAction()" style="padding:8px 16px;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;border-radius:4px;border:1px solid rgba(153,60,29,0.35);background:transparent;color:var(--coral);cursor:pointer;transition:all 0.15s;">✗ Reject</button>
-                                </div>
-                            </div>
-                            <div id="hitl-result" style="display:none;margin-top:10px;border-radius:6px;padding:10px 14px;font-size:13px;"></div>
-                        </div>
-                        <div id="resp-error" style="display:none;">
-                            <div class="err-box" id="err-text"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ── Signup ──────────────────────────────────────────────────────── -->
-            <div class="signup-strip">
-                <h3>Stay in the loop</h3>
-                <p>Get notified when this project ships new features or moves toward production. No spam — one email when something meaningful changes.</p>
-                <div class="signup-row">
-                    <input id="signup-email" type="email" placeholder="your@email.com" class="signup-input">
-                    <button onclick="submitSignup()" class="signup-btn">Notify me</button>
-                </div>
-                <div id="signup-msg" class="signup-msg"></div>
-                <div style="margin-top:8px;font-family:'DM Mono',monospace;font-size:10px;color:var(--ink-4);">Your email is only used to notify you about this project. PIPEDA compliant.</div>
-            </div>
-
-            <!-- ── Footer ──────────────────────────────────────────────────────── -->
-            <div class="page-footer">
-                <p class="footer-copy">Built by <strong>Faiz Faruqi</strong> &middot; CloudKraft Consulting</p>
-                <div class="footer-links">
-                    <a href="https://faizfaruqi.com" target="_blank">faizfaruqi.com</a>
-                    <a href="https://cloudkraft.com" target="_blank">cloudkraft.com</a>
-                    <a href="https://github.com/faiz-faruqi/reg-intel-agent" target="_blank">GitHub</a>
-                    <a href="/docs" target="_blank">API Docs</a>
-                </div>
-            </div>
-
-        </div><!-- /content-wrap -->
-        </div><!-- /main-content -->
-    </div><!-- /main-panel -->
-</div><!-- /app-shell -->
+  </main>
+</div>
 
 <script>
-    let currentProposal = null;
+// ── State ─────────────────────────────────────────────────────────────
+let currentProposal = null;
+let currentRunId    = null;
+let runCounter      = 241;
 
-    /* ── Sidebar scroll ── */
-    function scrollTo(id) {
-        const container = document.getElementById('main-content');
-        if (id === 'overview') { container.scrollTo({ top: 0, behavior: 'smooth' }); return; }
-        const el = document.getElementById(id);
-        if (el && container) container.scrollTo({ top: el.offsetTop - 16, behavior: 'smooth' });
+// ── Seed audit log ────────────────────────────────────────────────────
+const auditLog = [
+  { ts:'2026-06-19T09:14:22Z', runId:'#0238', query:'What are GDPR data minimisation requirements?',                  step:'analysis_agent', decision:'query',    reviewer:'—',         hash:'f2b7·1e' },
+  { ts:'2026-06-19T10:02:47Z', runId:'#0239', query:'What does OSFI E-23 require for model validation?',              step:'human_gate',     decision:'approved',  reviewer:'F. Faruqi', hash:'a91c·4d' },
+  { ts:'2026-06-19T11:33:05Z', runId:'#0240', query:'What are the Basel III minimum capital adequacy requirements?',  step:'action_agent',   decision:'approved',  reviewer:'F. Faruqi', hash:'c34e·8a' },
+  { ts:'2026-06-19T12:58:11Z', runId:'#0241', query:'What are the PIPEDA principles for consent and data collection?',step:'human_gate',     decision:'rejected',  reviewer:'F. Faruqi', hash:'d72f·2b' },
+];
+
+// ── Panel switching ───────────────────────────────────────────────────
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('[id^="nav-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'audit') renderAuditLog();
+}
+
+// ── Audit log rendering ───────────────────────────────────────────────
+function renderAuditLog() {
+  const tbody = document.getElementById('audit-tbody');
+  const empty = document.getElementById('audit-empty');
+  const chip  = document.getElementById('audit-count-chip');
+  const navC  = document.getElementById('audit-nav-count');
+  const n = auditLog.length;
+  chip.textContent = n + ' entr' + (n === 1 ? 'y' : 'ies');
+  navC.textContent = n;
+  if (n === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = [...auditLog].reverse().map(e => `
+    <tr>
+      <td class="td-ts">${fmtTs(e.ts)}</td>
+      <td class="td-id">${e.runId}</td>
+      <td class="td-q"  title="${e.query}">${e.query.length > 55 ? e.query.slice(0,55)+'…' : e.query}</td>
+      <td class="td-step">${e.step}</td>
+      <td><span class="d-badge d-${e.decision}">${e.decision}</span></td>
+      <td class="td-who">${e.reviewer}</td>
+      <td class="td-hash">${e.hash}<span class="imm-tag">immutable</span></td>
+    </tr>`).join('');
+}
+
+function fmtTs(iso) {
+  const d = new Date(iso);
+  return d.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+}
+
+function addAudit(runId, query, step, decision, reviewer) {
+  const hash = Math.random().toString(16).slice(2,6) + '·' + Math.random().toString(16).slice(2,4);
+  auditLog.push({ ts: new Date().toISOString(), runId, query, step, decision, reviewer, hash });
+  document.getElementById('audit-nav-count').textContent = auditLog.length;
+  return hash;
+}
+
+// ── Health check ──────────────────────────────────────────────────────
+async function checkHealth() {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  try {
+    const r = await fetch('/health', { signal: AbortSignal.timeout(7000) });
+    dot.className = 'status-dot ' + (r.ok ? 'ok' : 'down');
+    txt.textContent = r.ok ? 'Operational' : 'Degraded';
+  } catch(_) {
+    dot.className = 'status-dot down';
+    txt.textContent = 'Offline';
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+function setQ(btn) { document.getElementById('question').value = btn.textContent; }
+
+function genRunId() { runCounter++; return '#' + String(runCounter).padStart(4, '0'); }
+
+function advance(step) {
+  for (let i = 1; i <= 6; i++) {
+    const el = document.getElementById('ls' + i);
+    if (!el || el.style.display === 'none') continue;
+    el.className = i < step ? 'ld-step done' : i === step ? 'ld-step active' : 'ld-step';
+  }
+}
+
+function renderMd(text) {
+  const lines = text.split('\n'); let html = '', inUl = false;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) { if (inUl) { html += '</ul>'; inUl = false; } continue; }
+    const bold = s => s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    if (line.startsWith('## '))      { if(inUl){html+='</ul>';inUl=false;} html += `<h2>${bold(line.slice(3))}</h2>`; }
+    else if (line.startsWith('# ')) { if(inUl){html+='</ul>';inUl=false;} html += `<h2>${bold(line.slice(2))}</h2>`; }
+    else if (line.startsWith('- ') || line.startsWith('* ')) {
+      if (!inUl) { html += '<ul>'; inUl = true; }
+      html += `<li>${bold(line.slice(2))}</li>`;
+    } else {
+      if (inUl) { html += '</ul>'; inUl = false; }
+      html += `<p>${bold(line)}</p>`;
     }
+  }
+  if (inUl) html += '</ul>';
+  return html;
+}
 
-    /* ── Active nav on scroll ── */
-    const sections = ['overview', 'architecture', 'governance', 'assurance', 'demo'];
-    const observer = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                document.querySelectorAll('.nav-item[data-section]').forEach(el => el.classList.remove('active'));
-                const nav = document.querySelector(`.nav-item[data-section="${entry.target.id}"]`);
-                if (nav) nav.classList.add('active');
-            }
-        });
-    }, { root: document.getElementById('main-content'), threshold: 0.25, rootMargin: '0px 0px -50% 0px' });
+function resetAgent() {
+  document.getElementById('agent-input').style.display   = '';
+  document.getElementById('agent-results').style.display = 'none';
+  currentProposal = null; currentRunId = null;
+}
 
-    window.addEventListener('DOMContentLoaded', () => {
-        sections.forEach(id => { const el = document.getElementById(id); if (el) observer.observe(el); });
-        checkHealth();
+function _setRunBtns(disabled) {
+  document.getElementById('btn-query').disabled   = disabled;
+  document.getElementById('btn-propose').disabled = disabled;
+}
+
+function _startRun(question, propose) {
+  currentRunId = genRunId();
+  document.getElementById('agent-input').style.display   = 'none';
+  document.getElementById('agent-results').style.display = '';
+  document.getElementById('run-id-chip').textContent = 'run ' + currentRunId;
+  document.getElementById('query-display').textContent = question;
+  document.getElementById('agent-loading').style.display = '';
+  document.getElementById('agent-content').style.display = 'none';
+  document.getElementById('ls6').style.display = propose ? 'flex' : 'none';
+  document.getElementById('ls7').style.display = 'none';
+  advance(1);
+  _setRunBtns(true);
+}
+
+function _showContent(data, propose, question, topK) {
+  document.getElementById('agent-loading').style.display = 'none';
+  document.getElementById('agent-content').style.display = '';
+
+  // Pipeline annotations
+  document.getElementById('pa-retrieve').textContent =
+    'pgvector · Neon — ' + topK + ' passages retrieved';
+
+  // Response
+  const rb = document.getElementById('resp-block');
+  rb.innerHTML = renderMd(data.response || '');
+  rb.style.display = 'block';
+
+  // Citations as chips
+  const cr = document.getElementById('cit-row');
+  if (data.citations && data.citations.length > 0) {
+    cr.innerHTML = data.citations.map(c => {
+      const label = c.split(':')[0].trim().slice(0, 46);
+      return `<span class="cit-chip">${label}</span>`;
+    }).join('');
+  } else { cr.innerHTML = ''; }
+
+  // HITL gate
+  const gate = document.getElementById('hitl-gate');
+  if (propose && data.proposed_action) {
+    currentProposal = data.proposed_action;
+    const p = data.proposed_action;
+    const hash = Math.random().toString(16).slice(2,6) + '·' + Math.random().toString(16).slice(2,4);
+    document.getElementById('hitl-badge').textContent = 'awaiting approval';
+    document.getElementById('hitl-audit-id').textContent = 'audit_id ' + hash + ' — immutable';
+    const pd = document.getElementById('hitl-proposal');
+    pd.innerHTML = `<strong>${p.title || 'Proposed action'}</strong>` +
+      (p.labels && p.labels.length ? `<br><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--hint);">${p.labels.join(' · ')}</span>` : '');
+    pd.style.display = 'block';
+    document.getElementById('hitl-actions').style.display = '';
+    document.getElementById('hitl-result').style.display = 'none';
+    document.getElementById('btn-approve').disabled = false;
+    document.getElementById('btn-reject').disabled  = false;
+    gate.style.display = '';
+    addAudit(currentRunId, question, 'action_agent', 'pending', '—');
+  } else {
+    gate.style.display = 'none';
+    addAudit(currentRunId, question, 'analysis_agent', 'query', '—');
+  }
+
+  document.getElementById('resp-error').style.display = 'none';
+}
+
+function _showError(msg) {
+  document.getElementById('agent-loading').style.display = 'none';
+  document.getElementById('agent-content').style.display = '';
+  document.getElementById('resp-block').style.display = 'none';
+  document.getElementById('cit-row').innerHTML = '';
+  document.getElementById('hitl-gate').style.display = 'none';
+  const errEl = document.getElementById('resp-error');
+  errEl.innerHTML = `<div class="err-box">${msg}</div>`;
+  errEl.style.display = '';
+}
+
+// ── Query (read-only) ─────────────────────────────────────────────────
+async function runQuery() {
+  const question = document.getElementById('question').value.trim();
+  if (!question) return;
+  const topK = parseInt(document.getElementById('top_k').value) || 5;
+  _startRun(question, false);
+  const timers = [
+    setTimeout(() => advance(2), 900),
+    setTimeout(() => advance(3), 2200),
+    setTimeout(() => advance(4), 5500),
+    setTimeout(() => advance(5), 7800),
+  ];
+  const cold = setTimeout(() => { document.getElementById('ls7').style.display = 'flex'; }, 10000);
+  try {
+    const res = await fetch('/query', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ question, top_k: topK })
     });
+    timers.forEach(clearTimeout); clearTimeout(cold);
+    document.getElementById('ls7').style.display = 'none';
+    advance(5); await new Promise(r => setTimeout(r, 320));
+    if (!res.ok) { const e = await res.json().catch(() => ({detail:'Unknown error'})); throw new Error(e.detail || `HTTP ${res.status}`); }
+    _showContent(await res.json(), false, question, topK);
+  } catch(err) { timers.forEach(clearTimeout); clearTimeout(cold); _showError(err.message); }
+  finally { _setRunBtns(false); }
+}
 
-    /* ── Health check ── */
-    async function checkHealth() {
-        const dots = ['api-dot', 'db-dot', 'ls-dot'];
-        try {
-            const res = await fetch('/health', { signal: AbortSignal.timeout(8000) });
-            const ok = res.ok;
-            dots.forEach(id => setDot(id, ok ? 'ok' : 'down'));
-            setDot('brand-dot', ok ? '' : 'down');
-        } catch (_) {
-            dots.forEach(id => setDot(id, 'down'));
-            setDot('brand-dot', 'down');
-        }
-    }
-    function setDot(id, state) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.className = el.className.replace(/\b(ok|checking|down)\b/g, '').trim();
-        if (state) el.classList.add(state);
-    }
-
-    /* ── Existing functionality ── */
-    function setQ(btn) { document.getElementById('question').value = btn.textContent; }
-
-    function showState(s) {
-        document.getElementById('resp-empty').style.display   = s==='empty'   ? 'flex'  : 'none';
-        document.getElementById('resp-loading').style.display = s==='loading' ? 'block' : 'none';
-        document.getElementById('resp-content').style.display = s==='content' ? 'block' : 'none';
-        document.getElementById('resp-error').style.display   = s==='error'   ? 'block' : 'none';
-    }
-
-    function advance(step) {
-        for (let i = 1; i <= 6; i++) {
-            const el = document.getElementById('ls' + i);
-            if (!el || el.style.display === 'none') continue;
-            el.className = i < step ? 'load-step done' : i === step ? 'load-step active' : 'load-step';
-        }
-    }
-
-    function renderMd(text) {
-        const lines = text.split('\n');
-        let html = '', inUl = false;
-        for (const raw of lines) {
-            const line = raw.trim();
-            if (!line) { if (inUl) { html += '</ul>'; inUl = false; } continue; }
-            const bold = s => s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-            if (line.startsWith('## '))       html += `<h2>${bold(line.slice(3))}</h2>`;
-            else if (line.startsWith('### ')) html += `<h3>${bold(line.slice(4))}</h3>`;
-            else if (line.startsWith('- ') || line.startsWith('* ')) {
-                if (!inUl) { html += '<ul>'; inUl = true; }
-                html += `<li>${bold(line.slice(2))}</li>`;
-            } else {
-                if (inUl) { html += '</ul>'; inUl = false; }
-                html += `<p>${bold(line)}</p>`;
-            }
-        }
-        if (inUl) html += '</ul>';
-        return html;
-    }
-
-    async function runQuery() {
-        const question = document.getElementById('question').value.trim();
-        if (!question) return;
-        const top_k = parseInt(document.getElementById('top_k').value);
-        document.getElementById('ls7').style.display = 'none';
-        const btn = document.getElementById('run-btn');
-        btn.disabled = true; btn.textContent = 'Running…';
-        showState('loading'); advance(1);
-        const coldStartTimer = setTimeout(() => { document.getElementById('ls7').style.display = 'flex'; }, 10000);
-        const timers = [
-            setTimeout(() => advance(2), 900),
-            setTimeout(() => advance(3), 2200),
-            setTimeout(() => advance(4), 5500),
-            setTimeout(() => advance(5), 7800),
-        ];
-        try {
-            const res = await fetch('/query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, top_k }) });
-            timers.forEach(clearTimeout); clearTimeout(coldStartTimer);
-            document.getElementById('ls7').style.display = 'none';
-            advance(5); await new Promise(r => setTimeout(r, 350));
-            if (!res.ok) { const err = await res.json().catch(() => ({ detail: 'Unknown error' })); throw new Error(err.detail || `HTTP ${res.status}`); }
-            const data = await res.json();
-            document.getElementById('resp-meta').innerHTML = [
-                `<span class="meta-chip ok">✓ Guardrails passed</span>`,
-                `<span class="meta-chip acc">📎 ${data.citations.length} citation${data.citations.length!==1?'s':''}</span>`,
-                data.is_cited ? `<span class="meta-chip ok">✓ Fully cited</span>` : `<span class="meta-chip warn">⚠ Citation flag</span>`,
-                `<span class="meta-chip">top_k = ${top_k}</span>`,
-                `<span class="meta-chip">Knowledge + Analysis agents</span>`,
-            ].join('');
-            document.getElementById('resp-text').innerHTML = renderMd(data.response);
-            const cits = document.getElementById('cits-section');
-            if (data.citations.length > 0) {
-                cits.innerHTML = `<div class="cits-label">Sources</div>` + data.citations.map((c, i) => `<div class="cit-item"><span class="cit-num">${i+1}</span>${c}</div>`).join('');
-                cits.style.display = 'block';
-            } else { cits.style.display = 'none'; }
-            showState('content');
-        } catch (err) {
-            timers.forEach(clearTimeout);
-            document.getElementById('err-text').textContent = `Error: ${err.message}`;
-            showState('error');
-        } finally { btn.disabled = false; btn.textContent = 'Run Query →'; }
-    }
-
-    async function runPropose() {
-        const question = document.getElementById('question').value.trim();
-        if (!question) return;
-        const top_k = parseInt(document.getElementById('top_k').value);
-        document.getElementById('ls7').style.display = 'none';
-        const runBtn = document.getElementById('run-btn');
-        const propBtn = document.getElementById('propose-btn');
-        runBtn.disabled = true; propBtn.disabled = true;
-        propBtn.textContent = 'Running full pipeline…';
-        document.getElementById('ls6').style.display = 'flex';
-        document.getElementById('ls4-label').textContent = 'Checking output guardrails';
-        document.getElementById('ls5-label').textContent = 'Writing to audit log';
-        document.getElementById('proposal-block').style.display = 'none';
-        document.getElementById('hitl-gate').style.display = 'block';
-        document.getElementById('hitl-result').style.display = 'none';
-        document.getElementById('approve-btn').disabled = false;
-        document.getElementById('reject-btn').disabled = false;
-        currentProposal = null;
-        showState('loading'); advance(1);
-        const timers = [
-            setTimeout(() => advance(2), 900),
-            setTimeout(() => advance(3), 2200),
-            setTimeout(() => advance(4), 5500),
-            setTimeout(() => advance(5), 7800),
-            setTimeout(() => advance(6), 9500),
-        ];
-        try {
-            const res = await fetch('/propose', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, top_k }) });
-            timers.forEach(clearTimeout); advance(6); await new Promise(r => setTimeout(r, 350));
-            if (!res.ok) { const err = await res.json().catch(() => ({ detail: 'Unknown error' })); throw new Error(err.detail || `HTTP ${res.status}`); }
-            const data = await res.json();
-            document.getElementById('resp-meta').innerHTML = [
-                `<span class="meta-chip ok">✓ Guardrails passed</span>`,
-                `<span class="meta-chip acc">📎 ${data.citations.length} citation${data.citations.length!==1?'s':''}</span>`,
-                data.is_cited ? `<span class="meta-chip ok">✓ Fully cited</span>` : `<span class="meta-chip warn">⚠ Citation flag</span>`,
-                `<span class="meta-chip warn">⚡ Action proposed</span>`,
-                `<span class="meta-chip">All 3 agents</span>`,
-            ].join('');
-            document.getElementById('resp-text').innerHTML = renderMd(data.response);
-            const cits = document.getElementById('cits-section');
-            if (data.citations.length > 0) {
-                cits.innerHTML = `<div class="cits-label">Sources</div>` + data.citations.map((c, i) => `<div class="cit-item"><span class="cit-num">${i+1}</span>${c}</div>`).join('');
-                cits.style.display = 'block';
-            } else { cits.style.display = 'none'; }
-            currentProposal = data.proposed_action;
-            const p = data.proposed_action;
-            document.getElementById('proposal-content').innerHTML = `
-                <div style="margin-bottom:8px;"><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.07em;">Title</span><br><strong style="color:var(--ink);font-size:13px;">${p.title||'—'}</strong></div>
-                <div style="margin-bottom:8px;"><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.07em;">Labels</span><br><div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;">${(p.labels||[]).map(l=>`<span style="background:var(--accent-glow);color:var(--accent);border:1px solid rgba(29,78,137,0.2);border-radius:3px;padding:2px 8px;font-family:'DM Mono',monospace;font-size:10px;">${l}</span>`).join('')}</div></div>
-                <div><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.07em;">Body</span><br><div style="white-space:pre-wrap;font-size:12px;color:var(--ink-3);margin-top:4px;line-height:1.6;">${p.body||'—'}</div></div>`;
-            document.getElementById('proposal-block').style.display = 'block';
-            showState('content');
-        } catch (err) {
-            timers.forEach(clearTimeout);
-            document.getElementById('err-text').textContent = `Error: ${err.message}`;
-            showState('error');
-        } finally {
-            runBtn.disabled = false; propBtn.disabled = false;
-            propBtn.textContent = 'Run Full Pipeline + Propose Action →';
-            document.getElementById('ls6').style.display = 'none';
-        }
-    }
-
-    async function approveAction() {
-        if (!currentProposal) return;
-        const approveBtn = document.getElementById('approve-btn');
-        const rejectBtn  = document.getElementById('reject-btn');
-        approveBtn.disabled = true; rejectBtn.disabled = true;
-        approveBtn.textContent = 'Creating ticket…';
-        try {
-            const res = await fetch('/execute', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: currentProposal.title||'', body: currentProposal.body||'', labels: currentProposal.labels||[] }) });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
-            const resultEl = document.getElementById('hitl-result');
-            resultEl.style.cssText = 'display:block;background:rgba(15,110,86,0.07);border:1px solid rgba(15,110,86,0.25);border-radius:6px;padding:10px 14px;font-size:13px;';
-            resultEl.innerHTML = `<span style="color:var(--success);font-weight:600;">✓ Ticket created</span> &nbsp;·&nbsp; <strong>${data.backend.toUpperCase()}</strong>: ${data.key} &nbsp;·&nbsp; <a href="${data.url}" target="_blank" style="color:var(--accent);">View →</a><br><span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;">Decision recorded in audit log.</span>`;
-            document.getElementById('hitl-gate').style.display = 'none';
-        } catch (err) {
-            const resultEl = document.getElementById('hitl-result');
-            resultEl.style.cssText = 'display:block;background:rgba(153,60,29,0.07);border:1px solid rgba(153,60,29,0.2);border-radius:6px;padding:10px 14px;font-size:13px;';
-            resultEl.innerHTML = `<span style="color:var(--danger);font-weight:600;">✗ Error</span>: ${err.message}`;
-            approveBtn.disabled = false; rejectBtn.disabled = false;
-            approveBtn.textContent = '✓ Approve & Create Ticket';
-        }
-    }
-
-    async function rejectAction() {
-        if (!currentProposal) return;
-        const approveBtn = document.getElementById('approve-btn');
-        const rejectBtn  = document.getElementById('reject-btn');
-        approveBtn.disabled = true; rejectBtn.disabled = true;
-        try { await fetch('/reject', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: currentProposal.title||'' }) }); } catch (_) {}
-        const resultEl = document.getElementById('hitl-result');
-        resultEl.style.cssText = 'display:block;background:rgba(153,60,29,0.05);border:1px solid rgba(153,60,29,0.2);border-radius:6px;padding:10px 14px;font-size:13px;';
-        resultEl.innerHTML = `<span style="color:var(--danger);font-weight:600;">✗ Rejected</span> — no ticket created. <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;">Decision recorded in audit log.</span>`;
-        document.getElementById('hitl-gate').style.display = 'none';
-    }
-
-    async function submitSignup() {
-        const email = document.getElementById('signup-email').value.trim();
-        const msg   = document.getElementById('signup-msg');
-        if (!email || !email.includes('@')) { msg.style.color = 'var(--danger)'; msg.textContent = 'Please enter a valid email address.'; return; }
-        msg.style.color = 'var(--muted)'; msg.textContent = 'Submitting…';
-        try {
-            const res = await fetch('/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
-            msg.style.color = 'var(--success)'; msg.textContent = '✓ ' + data.message;
-            document.getElementById('signup-email').value = '';
-        } catch (err) { msg.style.color = 'var(--danger)'; msg.textContent = 'Error: ' + err.message; }
-    }
-
-    document.getElementById('question').addEventListener('keydown', e => {
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runQuery();
+// ── Propose (full pipeline) ───────────────────────────────────────────
+async function runPropose() {
+  const question = document.getElementById('question').value.trim();
+  if (!question) return;
+  const topK = parseInt(document.getElementById('top_k').value) || 5;
+  _startRun(question, true);
+  const timers = [
+    setTimeout(() => advance(2), 900),
+    setTimeout(() => advance(3), 2200),
+    setTimeout(() => advance(4), 5500),
+    setTimeout(() => advance(5), 7800),
+    setTimeout(() => advance(6), 9500),
+  ];
+  const cold = setTimeout(() => { document.getElementById('ls7').style.display = 'flex'; }, 10000);
+  try {
+    const res = await fetch('/propose', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ question, top_k: topK })
     });
+    timers.forEach(clearTimeout); clearTimeout(cold);
+    document.getElementById('ls7').style.display = 'none';
+    advance(6); await new Promise(r => setTimeout(r, 320));
+    if (!res.ok) { const e = await res.json().catch(() => ({detail:'Unknown error'})); throw new Error(e.detail || `HTTP ${res.status}`); }
+    _showContent(await res.json(), true, question, topK);
+  } catch(err) { timers.forEach(clearTimeout); clearTimeout(cold); _showError(err.message); }
+  finally { _setRunBtns(false); document.getElementById('ls6').style.display = 'none'; }
+}
+
+// ── HITL: Approve ────────────────────────────────────────────────────
+async function approveAction() {
+  if (!currentProposal) return;
+  const ab = document.getElementById('btn-approve');
+  const rb = document.getElementById('btn-reject');
+  ab.disabled = true; rb.disabled = true; ab.textContent = 'Creating…';
+  try {
+    const res = await fetch('/execute', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ title: currentProposal.title||'', body: currentProposal.body||'', labels: currentProposal.labels||[] })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+    // Update last pending audit entry
+    const last = auditLog[auditLog.length-1];
+    if (last && last.decision === 'pending') { last.decision = 'approved'; last.reviewer = 'F. Faruqi'; last.step = 'human_gate'; }
+    const el = document.getElementById('hitl-result');
+    el.className = 'hitl-result ok';
+    el.innerHTML = `✓ Ticket created — <strong>${(data.backend||'').toUpperCase()}</strong>: ${data.key} &nbsp;<a href="${data.url}" target="_blank" style="color:var(--navy);">View →</a><br><span style="font-size:11px;opacity:.75;">Decision written to audit log.</span>`;
+    el.style.display = '';
+    document.getElementById('hitl-actions').style.display = 'none';
+    document.getElementById('hitl-badge').textContent = 'approved';
+    currentProposal = null;
+  } catch(err) {
+    const el = document.getElementById('hitl-result');
+    el.className = 'hitl-result err';
+    el.innerHTML = '✗ Error: ' + err.message;
+    el.style.display = '';
+    ab.disabled = false; rb.disabled = false; ab.textContent = 'Approve & log';
+  }
+}
+
+// ── HITL: Reject ─────────────────────────────────────────────────────
+async function rejectAction() {
+  if (!currentProposal) return;
+  document.getElementById('btn-approve').disabled = true;
+  document.getElementById('btn-reject').disabled  = true;
+  try { await fetch('/reject', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title: currentProposal.title||'' }) }); } catch(_){}
+  const last = auditLog[auditLog.length-1];
+  if (last && last.decision === 'pending') { last.decision = 'rejected'; last.reviewer = 'F. Faruqi'; last.step = 'human_gate'; }
+  const el = document.getElementById('hitl-result');
+  el.className = 'hitl-result err';
+  el.innerHTML = `✗ Changes requested — no ticket created.<br><span style="font-size:11px;opacity:.75;">Decision written to audit log.</span>`;
+  el.style.display = '';
+  document.getElementById('hitl-actions').style.display = 'none';
+  document.getElementById('hitl-badge').textContent = 'changes requested';
+  currentProposal = null;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  checkHealth();
+  renderAuditLog();
+  document.getElementById('question').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runPropose();
+  });
+});
 </script>
 </body>
 </html>
