@@ -1168,6 +1168,19 @@ function _showError(msg) {
   errEl.style.display = '';
 }
 
+// ── Fetch with one cold-start retry ──────────────────────────────────
+async function fetchRetry(url, opts) {
+  try {
+    return await fetch(url, { signal: AbortSignal.timeout(90000), ...opts });
+  } catch (err) {
+    if (!(err instanceof TypeError)) throw err;
+    // Network drop — show cold-start banner, wait 8s, try once more
+    document.getElementById('ls7').style.display = 'flex';
+    await new Promise(r => setTimeout(r, 8000));
+    return await fetch(url, { signal: AbortSignal.timeout(90000), ...opts });
+  }
+}
+
 // ── Query (read-only) ─────────────────────────────────────────────────
 async function runQuery() {
   const question = document.getElementById('question').value.trim();
@@ -1180,18 +1193,17 @@ async function runQuery() {
     setTimeout(() => advance(4), 5500),
     setTimeout(() => advance(5), 7800),
   ];
-  const cold = setTimeout(() => { document.getElementById('ls7').style.display = 'flex'; }, 10000);
   try {
-    const res = await fetch('/query', {
+    const res = await fetchRetry('/query', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ question, top_k: topK })
     });
-    timers.forEach(clearTimeout); clearTimeout(cold);
+    timers.forEach(clearTimeout);
     document.getElementById('ls7').style.display = 'none';
     advance(5); await new Promise(r => setTimeout(r, 320));
     if (!res.ok) { const e = await res.json().catch(() => ({detail:'Unknown error'})); throw new Error(e.detail || `HTTP ${res.status}`); }
     _showContent(await res.json(), false, question, topK);
-  } catch(err) { timers.forEach(clearTimeout); clearTimeout(cold); _showError(err.message); }
+  } catch(err) { timers.forEach(clearTimeout); _showError(err.message); }
   finally { _setRunBtns(false); }
 }
 
@@ -1208,18 +1220,17 @@ async function runPropose() {
     setTimeout(() => advance(5), 7800),
     setTimeout(() => advance(6), 9500),
   ];
-  const cold = setTimeout(() => { document.getElementById('ls7').style.display = 'flex'; }, 10000);
   try {
-    const res = await fetch('/propose', {
+    const res = await fetchRetry('/propose', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ question, top_k: topK })
     });
-    timers.forEach(clearTimeout); clearTimeout(cold);
+    timers.forEach(clearTimeout);
     document.getElementById('ls7').style.display = 'none';
     advance(6); await new Promise(r => setTimeout(r, 320));
     if (!res.ok) { const e = await res.json().catch(() => ({detail:'Unknown error'})); throw new Error(e.detail || `HTTP ${res.status}`); }
     _showContent(await res.json(), true, question, topK);
-  } catch(err) { timers.forEach(clearTimeout); clearTimeout(cold); _showError(err.message); }
+  } catch(err) { timers.forEach(clearTimeout); _showError(err.message); }
   finally { _setRunBtns(false); document.getElementById('ls6').style.display = 'none'; }
 }
 

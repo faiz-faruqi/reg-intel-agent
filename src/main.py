@@ -292,10 +292,6 @@ def run_eval(request: Request) -> dict:
     }
 
 
-class SignupRequest(BaseModel):
-    email: str
-
-
 if __name__ == "__main__":
     import uvicorn
 
