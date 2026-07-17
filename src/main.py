@@ -2,6 +2,7 @@
 
 import json as _json
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -31,6 +32,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # ── Session management (signed cookies, no database) ──────────────────
 _SESSION_COOKIE = "regintel_session"
 _serializer = URLSafeTimedSerializer(settings.SESSION_SECRET, salt="regintel-auth")
+# Railway injects RAILWAY_ENVIRONMENT for every deployed service; absent locally.
+# Used to mark the session cookie Secure only where we know traffic is HTTPS.
+_IS_DEPLOYED = "RAILWAY_ENVIRONMENT" in os.environ
 
 
 def create_session_cookie(response: Response) -> Response:
@@ -52,7 +56,7 @@ def create_session_cookie(response: Response) -> Response:
         max_age=settings.SESSION_MAX_AGE,
         httponly=True,
         samesite="lax",
-        secure=False,  # Set True in production behind HTTPS
+        secure=_IS_DEPLOYED,  # HTTPS-only on Railway; plain HTTP allowed for local dev
         path="/",
     )
     return response

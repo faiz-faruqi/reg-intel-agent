@@ -21,9 +21,10 @@ Two-tier strategy:
 ### Demo tier — what is running now
 - **Orchestration:** LangGraph supervisor + 3 specialist agents (Python)
 - **API service:** FastAPI — hosted on Railway Hobby, auto-deploys from `main`
-- **Models:** `anthropic/claude-sonnet-4.5` via **OpenRouter** for generation
-  (set via `GENERATION_MODEL` env var; the free `google/gemma-4-31b-it:free` is a
-  fallback only — chronically rate-limited (429), unreliable for a live demo);
+- **Models:** `z-ai/glm-5.2` via **OpenRouter** for generation — cheap and reliable
+  (OpenRouter auto-fails-over across providers hosting it; set via `GENERATION_MODEL`
+  env var); the free `google/gemma-4-31b-it:free` is a fallback only — chronically
+  rate-limited (429), unreliable for a live demo;
   `text-embedding-3-small` via OpenRouter for embeddings (1536-dim)
 - **Vector store:** Neon free tier PostgreSQL with **pgvector** (HNSW index)
 - **Audit log:** Same Neon DB, `audit_log` table — append-only enforced by
@@ -99,8 +100,9 @@ See ADRs for the transition trigger and what changes.
 ## Cost (current)
 - Railway Hobby (FastAPI compute): ~$5–10/month
 - Neon free tier (pgvector + audit log): $0
-- OpenRouter `anthropic/claude-sonnet-4.5` generation: ~$0.05–0.10 per query
-  (pay-as-you-go; negligible at demo query volume, a few dollars/month at most)
+- OpenRouter `z-ai/glm-5.2` generation: $0.93 / $3 per 1M input/output tokens
+  (pay-as-you-go; roughly 3–5x cheaper per token than `anthropic/claude-sonnet-4.5`,
+  negligible at demo query volume)
 - OpenRouter `text-embedding-3-small` embeddings: ~$0.00 at demo query volume
 - **Total: ~$5–15/month at demo scale** (compute-dominated; generation is
   pay-per-query, so cost tracks usage rather than a fixed monthly fee)
