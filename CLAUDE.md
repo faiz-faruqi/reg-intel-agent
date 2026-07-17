@@ -21,7 +21,9 @@ Two-tier strategy:
 ### Demo tier — what is running now
 - **Orchestration:** LangGraph supervisor + 3 specialist agents (Python)
 - **API service:** FastAPI — hosted on Railway Hobby, auto-deploys from `main`
-- **Models:** `google/gemma-4-31b-it:free` via **OpenRouter** for generation;
+- **Models:** `anthropic/claude-sonnet-4.5` via **OpenRouter** for generation
+  (set via `GENERATION_MODEL` env var; the free `google/gemma-4-31b-it:free` is a
+  fallback only — chronically rate-limited (429), unreliable for a live demo);
   `text-embedding-3-small` via OpenRouter for embeddings (1536-dim)
 - **Vector store:** Neon free tier PostgreSQL with **pgvector** (HNSW index)
 - **Audit log:** Same Neon DB, `audit_log` table — append-only enforced by
@@ -97,9 +99,11 @@ See ADRs for the transition trigger and what changes.
 ## Cost (current)
 - Railway Hobby (FastAPI compute): ~$5–10/month
 - Neon free tier (pgvector + audit log): $0
-- OpenRouter `google/gemma-4-31b-it:free` generation: $0
+- OpenRouter `anthropic/claude-sonnet-4.5` generation: ~$0.05–0.10 per query
+  (pay-as-you-go; negligible at demo query volume, a few dollars/month at most)
 - OpenRouter `text-embedding-3-small` embeddings: ~$0.00 at demo query volume
-- **Total: effectively ~$5–10/month**
+- **Total: ~$5–15/month at demo scale** (compute-dominated; generation is
+  pay-per-query, so cost tracks usage rather than a fixed monthly fee)
 
 ## Security constraints (must remain in effect)
 - Never hardcode secrets — all credentials via env vars only

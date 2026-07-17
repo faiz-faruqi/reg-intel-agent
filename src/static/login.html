@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regulatory Intelligence — CloudKraft</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ── Tokens (matching index.html design system) ──────────────────── */
+    :root {
+      --paper:        #faf9f6;
+      --sidebar:      #f4f1e9;
+      --hover-bg:     #ece9e1;
+      --navy:         #1d4e89;
+      --navy-hover:   #16397a;
+      --ink:          #2b323d;
+      --ink-3:        #6b6b6b;
+      --ink-4:        #9a9a9a;
+      --muted:        #5a6273;
+      --hint:         #a39b89;
+      --border:       #e3ded2;
+      --rule:         #e0ddd8;
+      --surface:      #ffffff;
+      --accent:       #1b4e8a;
+      --accent-mid:   #3a7bc8;
+      --accent-light: #e8f0fa;
+      --info-bg:      #e7eef7;
+      --info-border:  #cfe0f2;
+      --info-text:    #0c447c;
+      --coral:        #993c1d;
+      --coral-light:  #fdf0ed;
+      --danger:       #993c1d;
+      --danger-bg:    #faece7;
+      --danger-border:rgba(153,60,29,.25);
+    }
+
+    /* ── Reset ──────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Instrument Sans', sans-serif;
+      background: var(--paper); color: var(--ink);
+      font-size: 14px; line-height: 1.6;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+
+    /* ── Login container ────────────────────────────────────────────── */
+    .login-wrap { width: 100%; max-width: 380px; }
+
+    /* ── Brand header ───────────────────────────────────────────────── */
+    .brand { margin-bottom: 32px; }
+    .brand-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .brand-avatar {
+      width: 36px; height: 36px; flex-shrink: 0;
+      background: var(--navy); color: var(--paper);
+      border-radius: 7px; font-family: 'DM Serif Display', serif;
+      font-size: 18px; display: flex; align-items: center; justify-content: center;
+    }
+    .brand-name {
+      font-family: 'DM Serif Display', serif; font-size: 18px;
+      color: var(--ink); letter-spacing: -.01em; line-height: 1.2;
+    }
+    .brand-tag {
+      font-family: 'DM Mono', monospace; font-size: 10px;
+      color: var(--ink-4); text-transform: uppercase; letter-spacing: .06em;
+    }
+    .brand-desc { font-size: 13px; color: var(--ink-3); line-height: 1.65; }
+
+    /* ── Demo credentials box ───────────────────────────────────────── */
+    .demo-box {
+      border-radius: 8px; padding: 14px 16px; margin-bottom: 20px;
+      border-left: 3px solid var(--accent-mid);
+      background: var(--accent-light);
+    }
+    .demo-label {
+      font-family: 'DM Mono', monospace; font-size: 10px;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--accent); margin-bottom: 8px;
+    }
+    .demo-grid {
+      display: grid; grid-template-columns: auto 1fr; gap: 4px 12px;
+      font-size: 12px; margin-bottom: 8px;
+    }
+    .demo-grid .lbl { color: var(--ink-3); }
+    .demo-grid .val { font-family: 'DM Mono', monospace; color: var(--ink); }
+    .demo-code {
+      font-size: 11px; color: var(--ink-3);
+    }
+    .demo-code a {
+      color: var(--accent); text-decoration: none;
+      border-bottom: 1px solid rgba(29,78,137,0.3);
+      transition: opacity .12s;
+    }
+    .demo-code a:hover { opacity: .7; }
+
+    /* ── Form card ──────────────────────────────────────────────────── */
+    .form-card {
+      border: 1px solid var(--rule); border-radius: 12px;
+      padding: 24px; background: var(--surface);
+    }
+    .form-card form { display: flex; flex-direction: column; gap: 16px; }
+    .field { display: flex; flex-direction: column; }
+    .field label {
+      font-family: 'DM Mono', monospace; font-size: 10px;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--ink-4); margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%; border-radius: 8px; padding: 10px 12px;
+      font-family: 'Instrument Sans', sans-serif; font-size: 13px;
+      color: var(--ink); background: var(--paper);
+      border: 1px solid var(--rule);
+      outline: none; transition: border-color .12s, box-shadow .12s;
+    }
+    .field input::placeholder { color: var(--hint); }
+    .field input:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 2px rgba(29,78,137,0.15);
+    }
+
+    /* ── Error message ──────────────────────────────────────────────── */
+    .error-msg {
+      display: none; align-items: center; gap: 8px;
+      border-radius: 8px; padding: 10px 12px;
+      background: var(--coral-light);
+      border: 1px solid rgba(153,60,29,0.25);
+      color: var(--coral); font-size: 12px;
+    }
+    .error-msg.show { display: flex; }
+    .error-msg svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* ── Submit button ──────────────────────────────────────────────── */
+    .btn-submit {
+      width: 100%; border: none; border-radius: 8px;
+      padding: 10px 16px; cursor: pointer;
+      font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: .05em;
+      background: var(--navy); color: var(--paper);
+      transition: opacity .13s;
+    }
+    .btn-submit:hover { opacity: .87; }
+    .btn-submit:disabled { opacity: .38; cursor: not-allowed; }
+
+    /* ── Footer ─────────────────────────────────────────────────────── */
+    .footer {
+      text-align: center; margin-top: 24px;
+      font-family: 'DM Mono', monospace; font-size: 10px;
+      text-transform: uppercase; letter-spacing: .06em;
+      color: var(--ink-4);
+    }
+
+    /* ── Mobile ─────────────────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      body { padding: 16px; }
+      .form-card { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+
+  <!-- ── Brand Header ── -->
+  <div class="brand">
+    <div class="brand-row">
+      <div class="brand-avatar">R</div>
+      <div>
+        <div class="brand-name">Regulatory Intelligence</div>
+        <div class="brand-tag">CloudKraft</div>
+      </div>
+    </div>
+    <p class="brand-desc">
+      Governed multi-agent system for regulatory intelligence — RAG, control mapping,
+      and human-in-the-loop governance with an immutable audit log.
+    </p>
+  </div>
+
+  <!-- ── Demo Credentials Box ── -->
+  <div class="demo-box">
+    <div class="demo-label">Demo credentials</div>
+    <div class="demo-grid">
+      <span class="lbl">Username</span>
+      <span class="val">demo</span>
+      <span class="lbl">Password</span>
+      <span class="val">demo123</span>
+    </div>
+    <p class="demo-code">
+      Access code: provided by Faiz —
+      <a href="https://linkedin.com/in/faizfaruqi" target="_blank" rel="noopener noreferrer">
+        connect on LinkedIn →
+      </a>
+    </p>
+  </div>
+
+  <!-- ── Sign-In Form ── -->
+  <div class="form-card">
+    <form id="login-form" autocomplete="on">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required
+               autocomplete="username" placeholder="demo" value="">
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required
+               autocomplete="current-password" placeholder="••••••••" value="">
+      </div>
+
+      <div class="field">
+        <label for="accessCode">Access Code</label>
+        <input type="text" id="accessCode" name="accessCode" required
+               autocomplete="off" placeholder="Provided by Faiz" value="">
+      </div>
+
+      <div class="error-msg" id="error-msg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="error-text">Invalid credentials or access code.</span>
+      </div>
+
+      <button type="submit" class="btn-submit" id="btn-submit">Sign in →</button>
+    </form>
+  </div>
+
+  <!-- ── Footer ── -->
+  <p class="footer">FastAPI · pgvector · LangGraph · OpenRouter</p>
+
+</div>
+
+<script>
+(function() {
+  const form = document.getElementById('login-form');
+  const btn = document.getElementById('btn-submit');
+  const errBox = document.getElementById('error-msg');
+  const errText = document.getElementById('error-text');
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    errBox.classList.remove('show');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const accessCode = document.getElementById('accessCode').value;
+
+    try {
+      const res = await fetch('/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, access_code: accessCode })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.ok) {
+        // Redirect to main app
+        window.location.href = '/';
+      } else {
+        errText.textContent = data.detail || 'Invalid credentials or access code.';
+        errBox.classList.add('show');
+        btn.disabled = false;
+        btn.textContent = 'Sign in →';
+      }
+    } catch(err) {
+      errText.textContent = 'Network error — please try again.';
+      errBox.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'Sign in →';
+    }
+  });
+})();
+</script>
+</body>
+</html>

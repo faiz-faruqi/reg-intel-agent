@@ -114,6 +114,62 @@ def write_audit_log(
 
 
 # ---------------------------------------------------------------------------
+# Per-session usage budget (caps LLM cost / deters misuse)
+# ---------------------------------------------------------------------------
+
+_session_table_ready = False
+
+
+def _ensure_session_usage_table(cur: Any) -> None:
+    """Create the session_usage table on first use (idempotent, per-process)."""
+    global _session_table_ready
+    if _session_table_ready:
+        return
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS session_usage (
+            sid          TEXT PRIMARY KEY,
+            action_count INTEGER NOT NULL DEFAULT 0,
+            created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+        """
+    )
+    _session_table_ready = True
+
+
+def increment_session_usage(sid: str, limit: int) -> tuple[bool, int]:
+    """
+    Atomically bump the action counter for a login session.
+
+    Returns (allowed, count). `allowed` is False once the session has already
+    reached `limit`; in that case the counter is NOT incremented further.
+    The increment is a single statement so concurrent calls cannot race past
+    the cap.
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            _ensure_session_usage_table(cur)
+            cur.execute(
+                """
+                INSERT INTO session_usage (sid, action_count)
+                VALUES (%s, 1)
+                ON CONFLICT (sid) DO UPDATE
+                    SET action_count = session_usage.action_count + 1,
+                        updated_at = now()
+                    WHERE session_usage.action_count < %s
+                RETURNING action_count
+                """,
+                (sid, limit),
+            )
+            row = cur.fetchone()
+            if row is None:
+                # Row exists and is already at the cap → blocked, no increment.
+                return False, limit
+            return True, row[0]
+
+
+# ---------------------------------------------------------------------------
 # Demo visitor email capture
 # ---------------------------------------------------------------------------
 

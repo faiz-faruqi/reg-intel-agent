@@ -2,14 +2,19 @@
 
 import json as _json
 import logging
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+
+from src.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +27,90 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# ── Session management (signed cookies, no database) ──────────────────
+_SESSION_COOKIE = "regintel_session"
+_serializer = URLSafeTimedSerializer(settings.SESSION_SECRET, salt="regintel-auth")
+
+
+def create_session_cookie(response: Response) -> Response:
+    """Attach a signed session cookie to the response (24h expiry).
+
+    Each session gets a unique `sid` used to track its metered-action budget
+    server-side. A fresh sign-in mints a new sid and therefore a fresh budget.
+    """
+    token = _serializer.dumps(
+        {
+            "user": "demo",
+            "sid": uuid.uuid4().hex,
+            "ts": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+    response.set_cookie(
+        key=_SESSION_COOKIE,
+        value=token,
+        max_age=settings.SESSION_MAX_AGE,
+        httponly=True,
+        samesite="lax",
+        secure=False,  # Set True in production behind HTTPS
+        path="/",
+    )
+    return response
+
+
+def get_session(request: Request) -> dict | None:
+    """Return the decoded session payload, or None if missing/invalid/expired."""
+    token = request.cookies.get(_SESSION_COOKIE)
+    if not token:
+        return None
+    try:
+        return _serializer.loads(token, max_age=settings.SESSION_MAX_AGE)
+    except (BadSignature, SignatureExpired):
+        return None
+
+
+def verify_session(request: Request) -> bool:
+    """Check if the request has a valid (non-expired) session cookie."""
+    return get_session(request) is not None
+
+
+def require_session(request: Request) -> dict:
+    """Return the session payload or raise 401. Guards the API endpoints so the
+    login gate actually protects LLM cost — not just the UI."""
+    session = get_session(request)
+    if session is None:
+        raise HTTPException(status_code=401, detail="Please sign in to continue.")
+    return session
+
+
+def _enforce_session_budget(session: dict, response: Response) -> None:
+    """Charge one metered action against the session's budget. Raises 429 when
+    the per-session limit is reached. Adds usage headers for the UI."""
+    sid = session.get("sid")
+    limit = settings.SESSION_ACTION_LIMIT
+    if not sid:
+        # Legacy cookie minted before sids existed — cannot meter; expires in 24h.
+        return
+    from src.db import increment_session_usage
+
+    allowed, count = increment_session_usage(sid, limit)
+    response.headers["X-Session-Limit"] = str(limit)
+    response.headers["X-Session-Used"] = str(count)
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"Session limit reached — you've used all {limit} requests for this "
+                f"session. Sign out and sign back in to continue, or contact Faiz "
+                f"for extended access."
+            ),
+        )
+
+
+def clear_session_cookie(response: Response) -> Response:
+    """Delete the session cookie."""
+    response.delete_cookie(key=_SESSION_COOKIE, path="/")
+    return response
 
 
 class QueryRequest(BaseModel):
@@ -65,11 +154,63 @@ class SignupRequest(BaseModel):
     email: str
 
 
+class SignInRequest(BaseModel):
+    username: str
+    password: str
+    access_code: str = ""
+
+
 _UI_PATH = Path(__file__).parent / "static" / "index.html"
+_LOGIN_PATH = Path(__file__).parent / "static" / "login.html"
 
 
-@app.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def root() -> HTMLResponse:
+# ── Auth routes ────────────────────────────────────────────────────────
+@app.get("/auth/signin", response_class=HTMLResponse, include_in_schema=False)
+async def signin_page(request: Request) -> HTMLResponse:
+    """Serve the login page. Redirect to / if already authenticated."""
+    if verify_session(request):
+        return RedirectResponse(url="/", status_code=302)
+    return HTMLResponse(content=_LOGIN_PATH.read_text())
+
+
+@app.post("/auth/signin", tags=["auth"])
+@limiter.limit("5/minute;15/day")
+async def signin_submit(request: Request, body: SignInRequest) -> JSONResponse:
+    """
+    Validate credentials and set a signed session cookie.
+    Rate limited: 5/minute, 15/day per IP.
+    """
+    # Validate username & password
+    valid_user = body.username == settings.DEMO_USERNAME and body.password == settings.DEMO_PASSWORD
+
+    # Validate access code (skip check if env var is empty string)
+    valid_code = settings.DEMO_ACCESS_CODE == "" or body.access_code == settings.DEMO_ACCESS_CODE
+
+    if not (valid_user and valid_code):
+        return JSONResponse(
+            status_code=401,
+            content={"ok": False, "detail": "Invalid credentials or access code."},
+        )
+
+    # Success — set session cookie
+    response = JSONResponse(content={"ok": True, "redirect": "/"})
+    create_session_cookie(response)
+    return response
+
+
+@app.post("/auth/signout", tags=["auth"])
+async def signout() -> JSONResponse:
+    """Clear the session cookie and return success."""
+    response = JSONResponse(content={"ok": True})
+    clear_session_cookie(response)
+    return response
+
+
+# ── Protected root route ───────────────────────────────────────────────
+@app.get("/", response_class=HTMLResponse, response_model=None, include_in_schema=False)
+async def root(request: Request) -> HTMLResponse | RedirectResponse:
+    if not verify_session(request):
+        return RedirectResponse(url="/auth/signin", status_code=302)
     return HTMLResponse(content=_UI_PATH.read_text())
 
 
@@ -81,15 +222,20 @@ async def health() -> dict[str, str]:
 
 @app.post("/query", response_model=QueryResponse, tags=["query"])
 @limiter.limit("10/minute;20/day")
-async def query(request: Request, body: QueryRequest) -> QueryResponse:
+async def query(request: Request, body: QueryRequest, response: Response) -> QueryResponse:
     """
     Run a compliance question through the Knowledge + Analysis agents.
-    Rate limited: 10/minute, 30/day per IP.
+    Requires a valid session. Rate limited 10/minute, 20/day per IP, and capped
+    at SESSION_ACTION_LIMIT metered actions per login session.
     """
     from src.graph import graph
 
+    session = require_session(request)
+
     if not body.question.strip():
         raise HTTPException(status_code=400, detail="question must not be empty")
+
+    _enforce_session_budget(session, response)
 
     initial_state: dict = {
         "question": body.question,
@@ -117,17 +263,22 @@ async def query(request: Request, body: QueryRequest) -> QueryResponse:
 
 @app.post("/propose", response_model=ProposeResponse, tags=["query"])
 @limiter.limit("5/minute;10/day")
-async def propose(request: Request, body: QueryRequest) -> ProposeResponse:
+async def propose(request: Request, body: QueryRequest, response: Response) -> ProposeResponse:
     """
     Run the full 3-agent pipeline (Knowledge → Analysis → Action) and return the
     proposed GitHub issue. The proposal is NEVER executed via this endpoint —
     execution requires human approval via the CLI HITL gate.
-    Rate limited: 5/minute, 15/day per IP.
+    Requires a valid session. Rate limited 5/minute, 10/day per IP, and capped
+    at SESSION_ACTION_LIMIT metered actions per login session.
     """
     from src.graph import propose_graph
 
+    session = require_session(request)
+
     if not body.question.strip():
         raise HTTPException(status_code=400, detail="question must not be empty")
+
+    _enforce_session_budget(session, response)
 
     initial_state: dict = {
         "question": body.question,
@@ -168,8 +319,9 @@ async def execute(request: Request, body: ExecuteRequest) -> ExecuteResponse:
     Rate limited: 2/minute, 5/day per IP.
     Only called after the user explicitly clicks Approve in the UI.
     """
-    from src.config import settings
     from src.db import write_audit_log
+
+    require_session(request)
 
     backend = settings.TICKET_BACKEND.lower()
 
@@ -216,6 +368,8 @@ async def reject(request: Request, body: RejectRequest) -> dict[str, str]:
     """
     from src.db import write_audit_log
 
+    require_session(request)
+
     write_audit_log(
         agent_name="ui_hitl_gate",
         step_type="approval",
@@ -241,7 +395,5 @@ async def signup(request: Request, body: SignupRequest) -> dict[str, str]:
 
 if __name__ == "__main__":
     import uvicorn
-
-    from src.config import settings
 
     uvicorn.run(app, host="0.0.0.0", port=settings.PORT)

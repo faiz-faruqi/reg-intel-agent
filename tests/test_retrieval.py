@@ -4,9 +4,23 @@ from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
+from src.config import settings
 from src.main import app
 
 client = TestClient(app)
+
+
+def _login(c: TestClient) -> None:
+    """Authenticate the test client so its cookie jar carries a valid session."""
+    r = c.post(
+        "/auth/signin",
+        json={
+            "username": settings.DEMO_USERNAME,
+            "password": settings.DEMO_PASSWORD,
+            "access_code": settings.DEMO_ACCESS_CODE,
+        },
+    )
+    assert r.status_code == 200
 
 
 # ---------------------------------------------------------------------------
@@ -137,21 +151,37 @@ class TestSupervisor:
 # ---------------------------------------------------------------------------
 
 class TestQueryEndpoint:
+    def test_requires_session(self):
+        unauth = TestClient(app)
+        response = unauth.post("/query", json={"question": "What is model validation?"})
+        assert response.status_code == 401
+
     def test_empty_question_returns_400(self):
+        _login(client)
         response = client.post("/query", json={"question": "   "})
         assert response.status_code == 400
 
+    @patch("src.db.increment_session_usage", return_value=(True, 1))
     @patch("src.graph.graph")
-    def test_successful_query(self, mock_graph):
+    def test_successful_query(self, mock_graph, mock_usage):
         mock_graph.invoke.return_value = {
             "draft_response": "Models must be validated [1].",
             "citations": ["[1] OSFI E-23 — OSFI E-23 (2023)"],
             "is_cited": True,
         }
 
+        _login(client)
         response = client.post("/query", json={"question": "What is model validation?"})
 
         assert response.status_code == 200
         data = response.json()
         assert data["is_cited"] is True
         assert len(data["citations"]) == 1
+        assert response.headers["X-Session-Used"] == "1"
+
+    @patch("src.db.increment_session_usage", return_value=(False, 15))
+    def test_session_limit_returns_429(self, mock_usage):
+        _login(client)
+        response = client.post("/query", json={"question": "What is model validation?"})
+        assert response.status_code == 429
+        assert "Session limit reached" in response.json()["detail"]

@@ -2,6 +2,7 @@
 
 from typing import Literal
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,7 +21,14 @@ class Settings(BaseSettings):
 
     # OpenRouter (Phase 1) — used for both generation and embeddings
     OPENROUTER_API_KEY: str | None = None
-    OPENROUTER_MODEL_ID: str = "google/gemma-4-31b-it:free"
+    # Generation model. Reads GENERATION_MODEL (deployment env var) first, then
+    # OPENROUTER_MODEL_ID for backward compatibility. The free Gemma model is a
+    # fallback only — it is frequently rate-limited (429) upstream, so set an
+    # explicit GENERATION_MODEL in the deployment environment for a reliable demo.
+    OPENROUTER_MODEL_ID: str = Field(
+        default="google/gemma-4-31b-it:free",
+        validation_alias=AliasChoices("GENERATION_MODEL", "OPENROUTER_MODEL_ID"),
+    )
 
     # Bedrock (Phase 2+)
     AWS_ACCESS_KEY_ID: str | None = None
@@ -58,6 +66,19 @@ class Settings(BaseSettings):
     # Application
     PORT: int = 8000
     DEBUG: bool = False
+
+    # Authentication (session-based, no database)
+    # Generate SESSION_SECRET with: openssl rand -base64 32
+    SESSION_SECRET: str = "dev-secret-change-me-in-production"
+    DEMO_USERNAME: str = "demo"
+    DEMO_PASSWORD: str = "demo123"
+    # Leave blank to disable the access-code gate; set a value to require it
+    DEMO_ACCESS_CODE: str = "EARIG2026"
+    # Session lifetime in seconds (default: 24 hours)
+    SESSION_MAX_AGE: int = 86400
+    # Max metered actions (/query + /propose) per login session. Caps LLM cost
+    # and deters misuse. Resetting the budget requires a fresh sign-in.
+    SESSION_ACTION_LIMIT: int = 15
 
 
 settings = Settings()
