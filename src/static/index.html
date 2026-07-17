@@ -575,7 +575,7 @@
                   </div>
                   <div class="ps-body">
                     <div class="ps-name">Draft answer with citations</div>
-                    <div class="ps-anno">Gemma 4 31B via OpenRouter · guardrail screened</div>
+                    <div class="ps-anno">GLM 5.2 via OpenRouter · guardrail screened</div>
                   </div>
                 </div>
               </div>
@@ -814,9 +814,9 @@
                 <div class="adr-title">OpenRouter (demo) vs. Amazon Bedrock (production)</div>
                 <div class="adr-rows">
                   <span class="adr-fl">Decision</span>
-                  <span class="adr-fv">Use OpenRouter with google/gemma-4-31b-it:free for generation and text-embedding-3-small for embeddings. Production swaps to Bedrock — no application code changes.</span>
+                  <span class="adr-fv">Use OpenRouter with z-ai/glm-5.2 for generation and text-embedding-3-small for embeddings. Production swaps to Bedrock — no application code changes.</span>
                   <span class="adr-fl">Context</span>
-                  <span class="adr-fv">Generation cost = $0 at demo volume. Same ChatOpenAI client class works with a different base_url — OpenAI SDK compatibility is the critical design choice.</span>
+                  <span class="adr-fv">Generation cost ≈ $0.93 / $3 per 1M input/output tokens — negligible at demo volume. Same ChatOpenAI client class works with a different base_url — OpenAI SDK compatibility is the critical design choice.</span>
                   <span class="adr-fl">Trade-off</span>
                   <span class="adr-fv">Bedrock requires AWS account, 1024-dim embeddings (rebuild HNSW index), and IAM role assignment. Data stays in-region and OSFI E-23 MDS compliance is cleaner.</span>
                 </div>
