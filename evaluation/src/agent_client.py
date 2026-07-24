@@ -40,11 +40,12 @@ class AgentResponse:
 
 
 class AgentClient:
-    def __init__(self, mode: str = "mock", timeout: int = 60):
+    def __init__(self, mode: str = "mock", timeout: int = 120):
         self.mode = mode
         self.timeout = timeout
         self.base_url = os.getenv("AGENT_BASE_URL", "").rstrip("/")
         self.query_path = os.getenv("AGENT_QUERY_PATH", "/query")
+        self._session = None
 
         if self.mode == "live" and not self.base_url:
             raise ValueError(
@@ -59,11 +60,33 @@ class AgentClient:
         return self._live_query(question)
 
     # -- live ------------------------------------------------------------
+    def _get_session(self):
+        """The Agent gates /query behind a signed-cookie login session. Sign
+        in once (lazily) and reuse the cookie jar for every subsequent query."""
+        import requests
+
+        if self._session is not None:
+            return self._session
+
+        session = requests.Session()
+        resp = session.post(
+            f"{self.base_url}/auth/signin",
+            json={
+                "username": os.getenv("DEMO_USERNAME", "demo"),
+                "password": os.getenv("DEMO_PASSWORD", "demo123"),
+                "access_code": os.getenv("DEMO_ACCESS_CODE", ""),
+            },
+            timeout=self.timeout,
+        )
+        resp.raise_for_status()
+        self._session = session
+        return session
+
     def _live_query(self, question: str) -> AgentResponse:
-        import requests  # imported lazily so mock mode needs no dependency
+        session = self._get_session()
 
         url = f"{self.base_url}{self.query_path}"
-        resp = requests.post(url, json={"question": question}, timeout=self.timeout)
+        resp = session.post(url, json={"question": question}, timeout=self.timeout)
         resp.raise_for_status()
         return self._parse_live_response(resp.json())
 
