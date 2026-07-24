@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -166,6 +166,7 @@ class SignInRequest(BaseModel):
 
 _UI_PATH = Path(__file__).parent / "static" / "index.html"
 _LOGIN_PATH = Path(__file__).parent / "static" / "login.html"
+_MRA_REPORT_PATH = Path(__file__).parent / "static" / "mra-report.pdf"
 
 
 # ── Auth routes ────────────────────────────────────────────────────────
@@ -222,6 +223,16 @@ async def root(request: Request) -> HTMLResponse | RedirectResponse:
 async def health() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "ok"}
+
+
+@app.get("/mra-report.pdf", include_in_schema=False)
+async def mra_report() -> FileResponse:
+    """Serve the static Model Risk Assessment report (Assurance section download)."""
+    return FileResponse(
+        _MRA_REPORT_PATH,
+        media_type="application/pdf",
+        filename="model-risk-assessment.pdf",
+    )
 
 
 @app.post("/query", response_model=QueryResponse, tags=["query"])
