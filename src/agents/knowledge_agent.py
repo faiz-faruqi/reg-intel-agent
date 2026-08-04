@@ -4,10 +4,10 @@ import logging
 import time
 from functools import lru_cache
 
-from langchain_openai import OpenAIEmbeddings
+from langchain_core.embeddings import Embeddings
 
-from src.config import settings
 from src.db import similarity_search, write_audit_log
+from src.llm import build_embeddings_model
 from src.state import AgentState
 
 logger = logging.getLogger(__name__)
@@ -16,18 +16,11 @@ AGENT_NAME = "knowledge_agent"
 
 
 @lru_cache(maxsize=1)
-def _embeddings_model() -> OpenAIEmbeddings:
-    return OpenAIEmbeddings(
-        model=settings.EMBEDDING_MODEL,
-        api_key=settings.OPENROUTER_API_KEY,
-        base_url="https://openrouter.ai/api/v1",
-        dimensions=settings.EMBEDDING_DIMENSIONS,
-        timeout=20,
-        max_retries=2,
-    )
+def _embeddings_model() -> Embeddings:
+    return build_embeddings_model()
 
 
-def _embed_with_retry(model: OpenAIEmbeddings, text: str, max_attempts: int = 3) -> list[float]:
+def _embed_with_retry(model: Embeddings, text: str, max_attempts: int = 3) -> list[float]:
     """Retry embedding calls on transient errors."""
     last_exc: Exception | None = None
     for attempt in range(max_attempts):

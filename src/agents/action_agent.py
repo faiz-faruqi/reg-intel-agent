@@ -5,11 +5,11 @@ import logging
 import time
 from functools import lru_cache
 
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 
-from src.config import settings
 from src.db import write_audit_log
+from src.llm import build_chat_model
 from src.state import AgentState
 
 logger = logging.getLogger(__name__)
@@ -39,18 +39,11 @@ Propose a GitHub issue to track this compliance finding."""
 
 
 @lru_cache(maxsize=1)
-def _chat_model() -> ChatOpenAI:
-    return ChatOpenAI(
-        model=settings.OPENROUTER_MODEL_ID,
-        api_key=settings.OPENROUTER_API_KEY,
-        base_url="https://openrouter.ai/api/v1",
-        temperature=0,
-        timeout=30,
-        max_retries=2,
-    )
+def _chat_model() -> BaseChatModel:
+    return build_chat_model()
 
 
-def _invoke_with_retry(model: ChatOpenAI, messages: list, max_attempts: int = 3):
+def _invoke_with_retry(model: BaseChatModel, messages: list, max_attempts: int = 3):
     """Retry LLM calls on transient errors (e.g. OpenRouter 500s)."""
     last_exc: Exception | None = None
     for attempt in range(max_attempts):

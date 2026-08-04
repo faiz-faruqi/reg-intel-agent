@@ -16,10 +16,9 @@ import sys
 from html.parser import HTMLParser
 from pathlib import Path
 
-from langchain_openai import OpenAIEmbeddings
-
 from src.config import settings
 from src.db import document_count, store_document
+from src.llm import build_embeddings_model
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -98,8 +97,11 @@ def _load_cloudkraft_doc() -> dict:
 # ---------------------------------------------------------------------------
 
 def run() -> None:
-    if not settings.OPENROUTER_API_KEY:
+    if settings.MODEL_PROVIDER == "openrouter" and not settings.OPENROUTER_API_KEY:
         logger.error("OPENROUTER_API_KEY is not set — cannot create embeddings")
+        sys.exit(1)
+    if settings.MODEL_PROVIDER == "azure_openai" and not settings.AZURE_OPENAI_API_KEY:
+        logger.error("AZURE_OPENAI_API_KEY is not set — cannot create embeddings")
         sys.exit(1)
 
     docs = _load_json_docs() + [_load_cloudkraft_doc()]
@@ -113,12 +115,7 @@ def run() -> None:
             existing,
         )
 
-    embeddings_model = OpenAIEmbeddings(
-        model=settings.EMBEDDING_MODEL,
-        api_key=settings.OPENROUTER_API_KEY,
-        base_url="https://openrouter.ai/api/v1",
-        dimensions=settings.EMBEDDING_DIMENSIONS,
-    )
+    embeddings_model = build_embeddings_model()
 
     texts = [doc["content"] for doc in docs]
     logger.info("Embedding %d documents with model=%s ...", len(texts), settings.EMBEDDING_MODEL)

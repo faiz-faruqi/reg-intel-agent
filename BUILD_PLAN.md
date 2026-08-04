@@ -112,7 +112,8 @@ When there is budget and a real engagement:
 
 ## Stretch (only after Phase 3 is solid)
 - [x] Second tool integration — Jira Cloud REST API (done in Phase 3)
-- [ ] Azure OpenAI swap path (config-only, shows vendor portability)
+- [x] Azure OpenAI swap path (config-only, shows vendor portability) — `src/llm.py`,
+      validated with a real Azure OpenAI resource end-to-end (ADR-006)
 - [ ] Bedrock swap (change client + rebuild embeddings at 1024-dim)
 
 ---

@@ -25,7 +25,11 @@ Two-tier strategy:
   (OpenRouter auto-fails-over across providers hosting it; set via `GENERATION_MODEL`
   env var); the free `google/gemma-4-31b-it:free` is a fallback only — chronically
   rate-limited (429), unreliable for a live demo;
-  `text-embedding-3-small` via OpenRouter for embeddings (1536-dim)
+  `text-embedding-3-small` via OpenRouter for embeddings (1536-dim);
+  `MODEL_PROVIDER=azure_openai` is a validated, config-only alternative
+  (`src/llm.py`, ADR-006) for Azure-committed engagements — same
+  `text-embedding-3-small` model, deployment-name-based routing instead of
+  a bare model string
 - **Vector store:** Neon free tier PostgreSQL with **pgvector** (HNSW index)
 - **Audit log:** Same Neon DB, `audit_log` table — append-only enforced by
   `BEFORE DELETE` and `BEFORE UPDATE` triggers

@@ -106,6 +106,7 @@ The CLI (`python -m src.cli`) runs the full path including Action Agent and the 
 | [ADR-003](docs/adrs/ADR-003-application-guardrails-vs-bedrock-guardrails.md) | Application guardrails vs. AWS Bedrock Guardrails |
 | [ADR-004](docs/adrs/ADR-004-railway-hobby-vs-aws-app-runner.md) | Railway Hobby (demo) vs. AWS App Runner/ECS (production) |
 | [ADR-005](docs/adrs/ADR-005-openrouter-demo-vs-bedrock-production.md) | OpenRouter (demo) vs. Amazon Bedrock (production) |
+| [ADR-006](docs/adrs/ADR-006-azure-openai-as-alternate-provider.md) | Azure OpenAI as an alternate demo-tier provider (config-only, validated end-to-end) |
 
 ---
 
@@ -186,6 +187,11 @@ See [`.env.example`](.env.example) for the full list. Required variables:
 | `LANGSMITH_API_KEY` | LangSmith tracing (optional but recommended) |
 | `GITHUB_TOKEN` | GitHub PAT for Action Agent issue creation (Phase 2 / CLI only) |
 | `GITHUB_REPO` | Target repo in `owner/name` format |
+
+`MODEL_PROVIDER` defaults to `openrouter`. Set it to `azure_openai` to run
+against your own Azure OpenAI resource instead — see the `AZURE_OPENAI_*`
+variables in `.env.example` and [ADR-006](docs/adrs/ADR-006-azure-openai-as-alternate-provider.md)
+for the config-only swap, validated end-to-end.
 
 ---
 

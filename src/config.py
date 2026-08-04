@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,8 +16,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Model provider: openrouter for Phase 1, bedrock for Phase 2+
-    MODEL_PROVIDER: Literal["openrouter", "bedrock"] = "openrouter"
+    # Model provider: openrouter for Phase 1 (default), azure_openai as a
+    # validated config-only alternative (ADR-006), bedrock for Phase 2+ production
+    MODEL_PROVIDER: Literal["openrouter", "azure_openai", "bedrock"] = "openrouter"
 
     # OpenRouter (Phase 1) — used for both generation and embeddings
     OPENROUTER_API_KEY: str | None = None
@@ -29,6 +30,15 @@ class Settings(BaseSettings):
         default="google/gemma-4-31b-it:free",
         validation_alias=AliasChoices("GENERATION_MODEL", "OPENROUTER_MODEL_ID"),
     )
+
+    # Azure OpenAI (config-only alternative to OpenRouter — see ADR-006).
+    # Azure routes on a *deployment name*, not a bare model string, so both the
+    # chat and embedding deployments must be created in the Azure resource first.
+    AZURE_OPENAI_API_KEY: str | None = None
+    AZURE_OPENAI_ENDPOINT: str | None = None  # e.g. https://<resource>.openai.azure.com/
+    AZURE_OPENAI_API_VERSION: str = "2024-10-21"
+    AZURE_OPENAI_CHAT_DEPLOYMENT: str | None = None
+    AZURE_OPENAI_EMBEDDING_DEPLOYMENT: str | None = None
 
     # Bedrock (Phase 2+)
     AWS_ACCESS_KEY_ID: str | None = None
@@ -79,6 +89,22 @@ class Settings(BaseSettings):
     # Max metered actions (/query + /propose) per login session. Caps LLM cost
     # and deters misuse. Resetting the budget requires a fresh sign-in.
     SESSION_ACTION_LIMIT: int = 15
+
+    @model_validator(mode="after")
+    def _require_azure_fields_when_selected(self) -> "Settings":
+        if self.MODEL_PROVIDER == "azure_openai":
+            required = {
+                "AZURE_OPENAI_API_KEY": self.AZURE_OPENAI_API_KEY,
+                "AZURE_OPENAI_ENDPOINT": self.AZURE_OPENAI_ENDPOINT,
+                "AZURE_OPENAI_CHAT_DEPLOYMENT": self.AZURE_OPENAI_CHAT_DEPLOYMENT,
+                "AZURE_OPENAI_EMBEDDING_DEPLOYMENT": self.AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
+            }
+            missing = [name for name, value in required.items() if not value]
+            if missing:
+                raise ValueError(
+                    "MODEL_PROVIDER=azure_openai requires: " + ", ".join(missing)
+                )
+        return self
 
 
 settings = Settings()
