@@ -108,6 +108,10 @@ The CLI (`python -m src.cli`) runs the full path including Action Agent and the 
 | [ADR-005](docs/adrs/ADR-005-openrouter-demo-vs-bedrock-production.md) | OpenRouter (demo) vs. Amazon Bedrock (production) |
 | [ADR-006](docs/adrs/ADR-006-azure-openai-as-alternate-provider.md) | Azure OpenAI as an alternate demo-tier provider (config-only, validated end-to-end) |
 
+See [`docs/diagrams/c4-azure-openai.drawio.svg`](docs/diagrams/c4-azure-openai.drawio.svg)
+for a C4 container diagram of the system with the Azure OpenAI integration
+expanded to its two live deployments (editable source: `.drawio`).
+
 ---
 
 ## Quick Start (Local)

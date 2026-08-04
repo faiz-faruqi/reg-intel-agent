@@ -20,6 +20,12 @@ which was documented but never executed, this ADR is based on an actual
 Azure OpenAI resource, deployed models, and a live end-to-end run of the
 three-agent pipeline (`knowledge_agent` → `analysis_agent` → `action_agent`).
 
+See [`docs/diagrams/c4-azure-openai.drawio`](../diagrams/c4-azure-openai.drawio)
+(or the rendered [`.svg`](../diagrams/c4-azure-openai.drawio.svg)) for a C4
+container diagram of how the Azure OpenAI integration sits alongside the
+rest of the system — including both live deployments (`gpt-5-mini`,
+`embed-deploy`) inside the resource.
+
 ## Implementation
 
 `MODEL_PROVIDER=azure_openai` is now a first-class option alongside
