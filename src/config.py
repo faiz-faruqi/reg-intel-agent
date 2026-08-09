@@ -89,6 +89,9 @@ class Settings(BaseSettings):
     # anyone, including local dev, can sign in. Leave blank to disable the
     # endpoint (sign-in will then always reject, since no code can ever exist).
     ADMIN_KEY: str = ""
+    # Default TTL (in hours) for a generated access code when the caller
+    # doesn't specify one. 168 = 7 days.
+    ACCESS_CODE_DEFAULT_TTL_HOURS: float = 168
     # Max metered actions (/query + /propose) per login session. Caps LLM cost
     # and deters misuse. Resetting the budget requires a fresh sign-in.
     SESSION_ACTION_LIMIT: int = 15

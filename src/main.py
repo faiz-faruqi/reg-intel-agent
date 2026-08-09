@@ -165,7 +165,7 @@ class SignInRequest(BaseModel):
 
 
 class GenerateCodeRequest(BaseModel):
-    ttl_hours: float = 168
+    ttl_hours: float = settings.ACCESS_CODE_DEFAULT_TTL_HOURS
 
 
 _UI_PATH = Path(__file__).parent / "static" / "index.html"
