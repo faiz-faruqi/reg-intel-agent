@@ -12,14 +12,15 @@ client = TestClient(app)
 
 def _login(c: TestClient) -> None:
     """Authenticate the test client so its cookie jar carries a valid session."""
-    r = c.post(
-        "/auth/signin",
-        json={
-            "username": settings.DEMO_USERNAME,
-            "password": settings.DEMO_PASSWORD,
-            "access_code": settings.DEMO_ACCESS_CODE,
-        },
-    )
+    with patch("src.db.verify_access_code", return_value=True):
+        r = c.post(
+            "/auth/signin",
+            json={
+                "username": settings.DEMO_USERNAME,
+                "password": settings.DEMO_PASSWORD,
+                "access_code": "any-value-ignored-because-mocked",
+            },
+        )
     assert r.status_code == 200
 
 

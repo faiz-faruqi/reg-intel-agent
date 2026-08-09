@@ -2,6 +2,7 @@
 
 import json
 import logging
+import secrets
 from contextlib import contextmanager
 from typing import Any, Generator
 
@@ -182,3 +183,73 @@ def store_signup(email: str, ip_address: str | None = None) -> None:
                 (email, ip_address),
             )
     logger.debug("demo_signup: %s", email)
+
+
+# ---------------------------------------------------------------------------
+# Time-limited access code (single active code, admin-generated)
+# ---------------------------------------------------------------------------
+
+_access_code_table_ready = False
+
+
+def _ensure_access_code_table(cur: Any) -> None:
+    """Create the access_code table on first use (idempotent, per-process)."""
+    global _access_code_table_ready
+    if _access_code_table_ready:
+        return
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS access_code (
+            id         INTEGER PRIMARY KEY DEFAULT 1,
+            code       TEXT NOT NULL,
+            expires_at TIMESTAMPTZ NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            CONSTRAINT access_code_single_row CHECK (id = 1)
+        )
+        """
+    )
+    _access_code_table_ready = True
+
+
+def generate_access_code(ttl_hours: float) -> tuple[str, str]:
+    """
+    Create a new access code, replacing whichever one was active before —
+    there is only ever one valid code at a time. Returns (code, expires_at_iso).
+    """
+    code = secrets.token_urlsafe(9)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            _ensure_access_code_table(cur)
+            cur.execute(
+                """
+                INSERT INTO access_code (id, code, expires_at, created_at)
+                VALUES (1, %s, now() + %s * interval '1 hour', now())
+                ON CONFLICT (id) DO UPDATE
+                    SET code = EXCLUDED.code,
+                        expires_at = EXCLUDED.expires_at,
+                        created_at = EXCLUDED.created_at
+                RETURNING expires_at
+                """,
+                (code, ttl_hours),
+            )
+            row = cur.fetchone()
+            return code, row[0].isoformat()
+
+
+def verify_access_code(code: str) -> bool:
+    """
+    Check whether `code` matches the currently active, non-expired access code.
+    Fails closed: any DB error is treated as invalid — never fail open on auth.
+    """
+    if not code:
+        return False
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                _ensure_access_code_table(cur)
+                cur.execute("SELECT code FROM access_code WHERE id = 1 AND expires_at > now()")
+                row = cur.fetchone()
+                return row is not None and row[0] == code
+    except Exception:
+        logger.exception("verify_access_code: DB error, failing closed")
+        return False

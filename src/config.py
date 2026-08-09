@@ -82,10 +82,13 @@ class Settings(BaseSettings):
     SESSION_SECRET: str = "dev-secret-change-me-in-production"
     DEMO_USERNAME: str = "demo"
     DEMO_PASSWORD: str = "demo123"
-    # Leave blank to disable the access-code gate; set a value to require it
-    DEMO_ACCESS_CODE: str = "EARIG2026"
     # Session lifetime in seconds (default: 24 hours)
     SESSION_MAX_AGE: int = 86400
+    # Admin key for POST /auth/generate-code (X-Admin-Key header). A code must
+    # be generated at least once — via scripts/generate_access_code.py — before
+    # anyone, including local dev, can sign in. Leave blank to disable the
+    # endpoint (sign-in will then always reject, since no code can ever exist).
+    ADMIN_KEY: str = ""
     # Max metered actions (/query + /propose) per login session. Caps LLM cost
     # and deters misuse. Resetting the budget requires a fresh sign-in.
     SESSION_ACTION_LIMIT: int = 15

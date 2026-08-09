@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, Header, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from pydantic import BaseModel
@@ -164,6 +164,10 @@ class SignInRequest(BaseModel):
     access_code: str = ""
 
 
+class GenerateCodeRequest(BaseModel):
+    ttl_hours: float = 168
+
+
 _UI_PATH = Path(__file__).parent / "static" / "index.html"
 _LOGIN_PATH = Path(__file__).parent / "static" / "login.html"
 _MRA_REPORT_PATH = Path(__file__).parent / "static" / "mra-report.pdf"
@@ -185,11 +189,13 @@ async def signin_submit(request: Request, body: SignInRequest) -> JSONResponse:
     Validate credentials and set a signed session cookie.
     Rate limited: 5/minute, 15/day per IP.
     """
+    from src.db import verify_access_code
+
     # Validate username & password
     valid_user = body.username == settings.DEMO_USERNAME and body.password == settings.DEMO_PASSWORD
 
-    # Validate access code (skip check if env var is empty string)
-    valid_code = settings.DEMO_ACCESS_CODE == "" or body.access_code == settings.DEMO_ACCESS_CODE
+    # Validate the time-limited access code (checked against the DB, fails closed)
+    valid_code = verify_access_code(body.access_code)
 
     if not (valid_user and valid_code):
         return JSONResponse(
@@ -201,6 +207,27 @@ async def signin_submit(request: Request, body: SignInRequest) -> JSONResponse:
     response = JSONResponse(content={"ok": True, "redirect": "/"})
     create_session_cookie(response)
     return response
+
+
+@app.post("/auth/generate-code", tags=["auth"])
+async def generate_code(
+    body: GenerateCodeRequest, x_admin_key: str = Header(default="")
+) -> JSONResponse:
+    """
+    Admin-only: create a new access code, retiring whichever one was active
+    before — there is only ever one valid code at a time.
+    """
+    if not settings.ADMIN_KEY:
+        raise HTTPException(status_code=503, detail="Admin key not configured.")
+    if x_admin_key != settings.ADMIN_KEY:
+        raise HTTPException(status_code=403, detail="Invalid admin key.")
+
+    from src.db import generate_access_code
+
+    code, expires_at = generate_access_code(body.ttl_hours)
+    return JSONResponse(
+        content={"code": code, "expires_at": expires_at, "ttl_hours": body.ttl_hours}
+    )
 
 
 @app.post("/auth/signout", tags=["auth"])
