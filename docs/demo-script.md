@@ -7,8 +7,8 @@
 
 - Open `https://reg-intel.demo.cloudkraft.com` in a browser tab — **pre-warm it** (Railway
   Hobby sleeps after 30 min of inactivity; open the page once, wait 30 s, then demo).
-- Have a second tab open to your Jira board (`KAN` project) so you can show the ticket
-  after approving.
+- Have a second tab open to the GitHub issues tab (`faiz-faruqi/reg-intel-agent`) so you
+  can show the ticket after approving.
 - Know your one-line summary: *"A governed multi-agent system that answers compliance
   questions, proposes write actions, and enforces human approval before anything executes."*
 
@@ -39,7 +39,7 @@ Walk down the pipeline visually:
   OSFI E-23, OSFI B-20, and PIPEDA seeded.
 - **Analysis Agent** — drafts a cited response. Every factual claim requires an inline
   `[N]` citation — un-cited output is flagged, not silently emitted.
-- **Action Agent** — proposes a Jira ticket as `{title, body, labels}` JSON. It never
+- **Action Agent** — proposes a GitHub issue as `{title, body, labels}` JSON. It never
   executes anything on its own.
 - **HITL gate** — the graph pauses. A human must approve or reject. The decision is
   written to the audit log either way.
@@ -77,7 +77,7 @@ While it loads (5–15 s), narrate:
 
 While it loads, narrate:
 
-> *"This runs all three agents. The Action Agent is proposing a Jira ticket to track
+> *"This runs all three agents. The Action Agent is proposing a GitHub issue to track
 > the model validation gap it just identified."*
 
 **[When proposal appears — point to the title, body, and labels]:**
@@ -86,13 +86,15 @@ While it loads, narrate:
 
 **[Click "Approve & Create Ticket"]:**
 
-> *"I approve. The `/execute` endpoint calls the Jira API, creates the ticket,
+> *"I approve. The `/execute` endpoint calls the GitHub API, creates the issue,
 > and writes the approval decision to the audit log."*
 
-**[Switch to Jira tab — show the ticket in the KAN board]:**
+**[Switch to GitHub tab — show the issue]:**
 
-> *"There it is — `KAN-[N]`. The full chain: question → retrieval → analysis →
-> proposal → human decision → write. Every step is in the audit log."*
+> *"There it is — issue `#[N]`. The full chain: question → retrieval → analysis →
+> proposal → human decision → write. Every step is in the audit log. The backend
+> also supports Jira as a config-only swap (`TICKET_BACKEND=jira`) — this demo
+> is currently running on the GitHub path."*
 
 ---
 
