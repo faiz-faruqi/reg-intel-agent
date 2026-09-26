@@ -54,12 +54,21 @@ CREATE TABLE IF NOT EXISTS documents (
     content TEXT,
     source VARCHAR(255),
     embedding vector(1536),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Full-text search vector, kept in sync automatically — no app-side reindex
+    -- step needed on ingest. Powers keyword_search()/hybrid_search() in src/db.py.
+    -- See ADR-007 (vector-only vs hybrid retrieval).
+    content_tsv tsvector GENERATED ALWAYS AS (
+        to_tsvector('english', coalesce(title, '') || ' ' || coalesce(content, ''))
+    ) STORED
 );
 
 -- HNSW index: works well at any dataset size (unlike IVFFlat which needs ~hundreds of rows).
 -- Demo doc set (~20-50 docs) would be slower with IVFFlat. See ADR-002.
 CREATE INDEX IF NOT EXISTS documents_embedding_idx ON documents USING hnsw (embedding vector_cosine_ops);
+
+-- GIN index for keyword search (RETRIEVAL_MODE=hybrid). See ADR-007.
+CREATE INDEX IF NOT EXISTS documents_content_tsv_idx ON documents USING gin (content_tsv);
 
 -- Demo visitor email capture
 CREATE TABLE IF NOT EXISTS demo_signups (

@@ -114,6 +114,9 @@ When there is budget and a real engagement:
 - [x] Second tool integration — Jira Cloud REST API (done in Phase 3)
 - [x] Azure OpenAI swap path (config-only, shows vendor portability) — `src/llm.py`,
       validated with a real Azure OpenAI resource end-to-end (ADR-006)
+- [x] Hybrid search — `RETRIEVAL_MODE=hybrid` fuses pgvector cosine + Postgres
+      full-text (`tsvector`/GIN) via reciprocal rank fusion; config-only, default
+      off pending eval-harness comparison against the vector-only baseline (ADR-007)
 - [ ] Bedrock swap (change client + rebuild embeddings at 1024-dim)
 
 ---
@@ -128,6 +131,9 @@ When there is budget and a real engagement:
    spin-down, production trigger
 5. **OpenRouter (demo) vs. Amazon Bedrock (production)** — why OpenRouter for demo;
    how the swap works; IAM access key vs. role
+7. **Pure vector search (default) vs. hybrid search (config option)** — why RRF
+   over score-blending, why native Postgres FTS over an external library, the
+   corpus-size caveat, and the chunking trigger for when it matters more
 
 ## Demo script (interview — ≈3–4 min)
 1. **Problem:** regulated orgs need agents that act, but a monolith can't be audited

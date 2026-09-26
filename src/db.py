@@ -71,6 +71,61 @@ def similarity_search(query_embedding: list[float], top_k: int = 5) -> list[dict
             return [dict(row) for row in cur.fetchall()]
 
 
+def keyword_search(query_text: str, top_k: int = 5) -> list[dict[str, Any]]:
+    """Return the top_k documents ranked by Postgres full-text search (ts_rank)."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT id, title, content, source,
+                       ts_rank(content_tsv, plainto_tsquery('english', %s)) AS similarity
+                FROM documents
+                WHERE content_tsv @@ plainto_tsquery('english', %s)
+                ORDER BY similarity DESC
+                LIMIT %s
+                """,
+                (query_text, query_text, top_k),
+            )
+            return [dict(row) for row in cur.fetchall()]
+
+
+def _reciprocal_rank_fusion(
+    ranked_lists: list[list[dict[str, Any]]], top_k: int, k: int = 60
+) -> list[dict[str, Any]]:
+    """
+    Merge multiple ranked result lists (e.g. vector + keyword) by Reciprocal
+    Rank Fusion: score = sum(1 / (k + rank)) across lists a document appears
+    in. RRF combines *rank position* rather than raw scores, sidestepping the
+    problem of normalizing cosine similarity and ts_rank onto the same scale.
+    """
+    fused: dict[int, float] = {}
+    rows: dict[int, dict[str, Any]] = {}
+    for ranked in ranked_lists:
+        for rank, row in enumerate(ranked):
+            doc_id = row["id"]
+            fused[doc_id] = fused.get(doc_id, 0.0) + 1.0 / (k + rank + 1)
+            rows.setdefault(doc_id, row)
+
+    ordered_ids = sorted(fused, key=lambda doc_id: fused[doc_id], reverse=True)[:top_k]
+    results = []
+    for doc_id in ordered_ids:
+        row = dict(rows[doc_id])
+        row["similarity"] = fused[doc_id]
+        results.append(row)
+    return results
+
+
+def hybrid_search(query_embedding: list[float], query_text: str, top_k: int = 5) -> list[dict[str, Any]]:
+    """
+    Retrieve by fusing pgvector cosine search and Postgres full-text search
+    (Reciprocal Rank Fusion). See ADR-007 for why RRF over score-blending.
+    """
+    candidates = max(top_k * 3, top_k)
+    vector_hits = similarity_search(query_embedding, top_k=candidates)
+    keyword_hits = keyword_search(query_text, top_k=candidates)
+    return _reciprocal_rank_fusion([vector_hits, keyword_hits], top_k=top_k)
+
+
 def document_count() -> int:
     """Return the total number of documents in the store."""
     with get_conn() as conn:

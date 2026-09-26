@@ -6,7 +6,8 @@ from functools import lru_cache
 
 from langchain_core.embeddings import Embeddings
 
-from src.db import similarity_search, write_audit_log
+from src.config import settings
+from src.db import hybrid_search, similarity_search, write_audit_log
 from src.llm import build_embeddings_model
 from src.state import AgentState
 
@@ -46,8 +47,11 @@ def knowledge_agent(state: AgentState) -> AgentState:
     logger.info("%s: embedding question", AGENT_NAME)
     embedding = _embed_with_retry(_embeddings_model(), question)
 
-    chunks = similarity_search(embedding, top_k=top_k)
-    logger.info("%s: retrieved %d chunks", AGENT_NAME, len(chunks))
+    if settings.RETRIEVAL_MODE == "hybrid":
+        chunks = hybrid_search(embedding, question, top_k=top_k)
+    else:
+        chunks = similarity_search(embedding, top_k=top_k)
+    logger.info("%s: retrieved %d chunks (mode=%s)", AGENT_NAME, len(chunks), settings.RETRIEVAL_MODE)
 
     write_audit_log(
         agent_name=AGENT_NAME,

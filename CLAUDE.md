@@ -30,7 +30,8 @@ Two-tier strategy:
   (`src/llm.py`, ADR-006) for Azure-committed engagements — same
   `text-embedding-3-small` model, deployment-name-based routing instead of
   a bare model string
-- **Vector store:** Neon free tier PostgreSQL with **pgvector** (HNSW index)
+- **Vector store:** Neon free tier PostgreSQL with **pgvector** (HNSW index);
+  optional Postgres full-text (`tsvector`/GIN) for hybrid retrieval — ADR-007
 - **Audit log:** Same Neon DB, `audit_log` table — append-only enforced by
   `BEFORE DELETE` and `BEFORE UPDATE` triggers
 - **Tracing:** LangSmith (external SaaS, API key in Railway env vars)
@@ -82,6 +83,8 @@ See ADRs for the transition trigger and what changes.
 
 ## Agents (3)
 1. **Knowledge Agent** — embeds question, retrieves top-k chunks via pgvector HNSW
+   (cosine similarity); `RETRIEVAL_MODE=hybrid` fuses in Postgres full-text search
+   via reciprocal rank fusion — config-only, default off (ADR-007)
 2. **Analysis Agent** — drafts cited response; `is_cited=False` flags un-cited output
 3. **Action Agent** — proposes Jira/GitHub ticket as JSON `{title, body, labels}`;
    NEVER executes without explicit human approval

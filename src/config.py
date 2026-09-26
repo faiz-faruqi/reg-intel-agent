@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-1"
     BEDROCK_MODEL_ID: str = "anthropic.claude-3-sonnet-20240229-v1:0"
 
+    # Retrieval mode — "vector" (default, pure pgvector cosine) or "hybrid"
+    # (vector + Postgres full-text search, fused via reciprocal rank fusion).
+    # Requires the content_tsv/GIN migration — see scripts/migrate_add_fts.py
+    # and ADR-007. Config-only and reversible, same pattern as TICKET_BACKEND.
+    RETRIEVAL_MODE: Literal["vector", "hybrid"] = "vector"
+
     # Embedding model — dimension MUST match vector(N) in init-db.sql
     # Phase 1 (openrouter): text-embedding-3-small = 1536 dims
     # Phase 2 (bedrock):    amazon.titan-embed-text-v2:0 = 1024 dims
