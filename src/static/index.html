@@ -928,6 +928,7 @@
 let currentProposal = null;
 let currentRunId    = null;
 let runCounter      = 241;
+let retrievalMode   = 'vector';
 
 // ── Seed audit log ────────────────────────────────────────────────────
 const auditLog = [
@@ -989,6 +990,18 @@ async function checkHealth() {
     const r = await fetch('/health', { signal: AbortSignal.timeout(7000) });
     dot.className = 'status-dot ' + (r.ok ? 'ok' : 'down');
     txt.textContent = r.ok ? 'Operational' : 'Degraded';
+    if (r.ok) {
+      const h = await r.json();
+      if (h.retrieval_mode) {
+        retrievalMode = h.retrieval_mode;
+        const ls2 = document.getElementById('ls2');
+        if (ls2) {
+          ls2.lastChild.textContent = retrievalMode === 'hybrid'
+            ? 'Knowledge Agent — hybrid retrieval (pgvector + full-text, RRF)'
+            : 'Knowledge Agent — semantic retrieval (pgvector HNSW)';
+        }
+      }
+    }
   } catch(_) {
     dot.className = 'status-dot down';
     txt.textContent = 'Offline';
@@ -1058,8 +1071,11 @@ function _showContent(data, propose, question, topK) {
   document.getElementById('agent-content').style.display = '';
 
   // Pipeline annotations
+  const modeLabel = data.retrieval_mode === 'hybrid'
+    ? 'pgvector + full-text (hybrid, RRF) · Neon'
+    : 'pgvector · Neon';
   document.getElementById('pa-retrieve').textContent =
-    'pgvector · Neon — ' + topK + ' passages retrieved';
+    modeLabel + ' — ' + topK + ' passages retrieved';
 
   // Response
   const rb = document.getElementById('resp-block');

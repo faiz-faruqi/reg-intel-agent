@@ -127,6 +127,7 @@ class QueryResponse(BaseModel):
     response: str
     citations: list[str]
     is_cited: bool
+    retrieval_mode: str  # "vector" or "hybrid" — see RETRIEVAL_MODE, ADR-007
 
 
 class ProposeResponse(BaseModel):
@@ -135,6 +136,7 @@ class ProposeResponse(BaseModel):
     citations: list[str]
     is_cited: bool
     proposed_action: dict  # {title, body, labels} — never executed via API
+    retrieval_mode: str  # "vector" or "hybrid" — see RETRIEVAL_MODE, ADR-007
 
 
 class ExecuteRequest(BaseModel):
@@ -248,8 +250,9 @@ async def root(request: Request) -> HTMLResponse | RedirectResponse:
 
 @app.get("/health", tags=["health"])
 async def health() -> dict[str, str]:
-    """Health check endpoint."""
-    return {"status": "ok"}
+    """Health check endpoint. Also surfaces retrieval_mode so the UI can
+    reflect the active config without a query round-trip."""
+    return {"status": "ok", "retrieval_mode": settings.RETRIEVAL_MODE}
 
 
 @app.get("/mra-report.pdf", include_in_schema=False)
@@ -300,6 +303,7 @@ async def query(request: Request, body: QueryRequest, response: Response) -> Que
         response=result.get("draft_response", ""),
         citations=result.get("citations", []),
         is_cited=result.get("is_cited", False),
+        retrieval_mode=settings.RETRIEVAL_MODE,
     )
 
 
@@ -350,6 +354,7 @@ async def propose(request: Request, body: QueryRequest, response: Response) -> P
         citations=result.get("citations", []),
         is_cited=result.get("is_cited", False),
         proposed_action=proposal,
+        retrieval_mode=settings.RETRIEVAL_MODE,
     )
 
 

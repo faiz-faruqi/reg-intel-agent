@@ -13,7 +13,9 @@ def client():
 
 
 def test_health_endpoint(client):
-    """Test that the health endpoint returns ok status."""
+    """Test that the health endpoint returns ok status and the active retrieval mode."""
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["retrieval_mode"] in ("vector", "hybrid")
