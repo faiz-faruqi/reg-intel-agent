@@ -105,14 +105,14 @@ ai-assurance-framework/
 │   ├── agent_client.py           # adapter to system-under-test (mock + live)
 │   ├── metrics.py                # RAGAS (live) + deterministic scoring (mock)
 │   └── report.py                 # Model Risk Assessment generator
-├── docs/adr/ADR-006-ai-assurance-framework.md
+├── docs/adr/ADR-007-ai-assurance-framework.md
 └── samples/model_risk_assessment_sample.md
 ```
 
 ## Roadmap
 
 - **v1 (this):** golden dataset, RAGAS metrics, refusal correctness, MRA report,
-  NIST AI RMF + OSFI E-23 mappings, ADR-006.
+  NIST AI RMF + OSFI E-23 mappings, ADR-007.
 - **Phase 2:** adversarial/red-team suite; AWS Bedrock comparison run; ISO/IEC
   42001 + EU AI Act mappings; static results viewer page.
 

@@ -1,4 +1,4 @@
-# ADR-006: Enterprise AI Assurance Framework as a Standalone Evidence Layer
+# ADR-007: Enterprise AI Assurance Framework as a Standalone Evidence Layer
 
 - **Status:** Accepted
 - **Date:** 2026-06-10
