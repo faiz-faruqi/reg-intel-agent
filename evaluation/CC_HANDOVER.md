@@ -41,7 +41,7 @@ reg-intel-agent/
 │   │   └── report.py
 │   ├── samples/                  ← created at runtime
 │   └── docs/adr/
-│       └── ADR-006-ai-assurance-framework.md
+│       └── ADR-007-ai-assurance-framework.md
 └── README.md                     ← update per Step 4
 ```
 

@@ -107,6 +107,7 @@ The CLI (`python -m src.cli`) runs the full path including Action Agent and the 
 | [ADR-004](docs/adrs/ADR-004-railway-hobby-vs-aws-app-runner.md) | Railway Hobby (demo) vs. AWS App Runner/ECS (production) |
 | [ADR-005](docs/adrs/ADR-005-openrouter-demo-vs-bedrock-production.md) | OpenRouter (demo) vs. Amazon Bedrock (production) |
 | [ADR-006](docs/adrs/ADR-006-azure-openai-as-alternate-provider.md) | Azure OpenAI as an alternate demo-tier provider (config-only, validated end-to-end) |
+| [ADR-007](evaluation/docs/adr/ADR-007-ai-assurance-framework.md) | Enterprise AI Assurance Framework as a standalone evidence layer |
 
 See [`docs/diagrams/c4-azure-openai.drawio.svg`](docs/diagrams/c4-azure-openai.drawio.svg)
 for a C4 container diagram of the system with the Azure OpenAI integration
