@@ -130,5 +130,10 @@ See ADRs for the transition trigger and what changes.
 A phase is complete when its slice runs end-to-end, is traced in LangSmith,
 has at least one passing test, and is demoable at the live Railway URL.
 
+## Current work: Plan v2 (approved scope)
+Active work follows `docs/PLAN_v2.md`, approved by the owner. Items in it count as in scope for the
+"anything not in BUILD_PLAN.md" rule above. Start every session with `docs/HANDOVER.md`, then check
+`docs/STATUS.md` for current state, open PRs and decisions.
+
 ## Reference
-Full phased task list: @BUILD_PLAN.md
+Full phased task list (original build, Phases 0–3): @BUILD_PLAN.md

@@ -243,7 +243,7 @@ It answers:
 
 ## 13. Where the plan's assumptions don't match the repo
 
-In addition to the seven items in `docs/PLAN_v2.md` section A1:
+In addition to the seven items in `docs/PLAN_v2.md` section 2.1:
 
 1. Guardrails and the approval gate are weaker on the API path than the plan assumes (gaps 1 and 2).
    Phase 5 builds on controls that are partly missing, not on finished ones.
@@ -270,7 +270,7 @@ and correct stale facts: generation model is `GENERATION_MODEL` (`z-ai/glm-5.2` 
 not the free Gemma; rate limits are `/query` 10/min 20/day and `/propose` 5/min 10/day; tests 43;
 16 seeded rows.
 
-**`CLAUDE.md`:** tests 43 (not 23); 16 seeded rows; note that guardrails currently run only in the
+**`CLAUDE.md`:** (a pointer to `docs/HANDOVER.md` and `docs/PLAN_v2.md` was added in Phase 0 handover prep; the following facts are still pending) tests 43 (not 23); 16 seeded rows; note that guardrails currently run only in the
 CLI until gap 1 is fixed; ADR count 7.
 
 ## 15. Decisions needed before Phase 1
